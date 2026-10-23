@@ -25,7 +25,7 @@ antarmuka** — semua operasi melalui Artisan command dan scheduler.
 | 6. Multi-KLPD | Berkas kredensial, job paralel, laporan | ✅ |
 | 7. Pengerasan | Dokumentasi operasional | ✅ |
 
-Test suite: **86 test / 313 assertion**, seluruhnya berjalan di PostgreSQL
+Test suite: **84 test / 311 assertion**, seluruhnya berjalan di PostgreSQL
 (`inaproc_test`), bukan SQLite.
 
 ---
