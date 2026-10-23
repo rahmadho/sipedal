@@ -147,7 +147,7 @@
                         <div class="unggah">
                             <div class="unggah__ikon"><x-ikon nama="upload" :ukuran="22" /></div>
                             <p><strong>Klik untuk mengunggah</strong> atau tarik berkas ke sini</p>
-                            <small>SVG atau PNG transparan · maksimal 512 KB · rasio 1:1</small>
+                            <small>SVG atau PNG transparan, maksimal 512 KB, rasio 1:1</small>
                         </div>
                     </div>
                 </div>

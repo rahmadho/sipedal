@@ -111,7 +111,7 @@
                             <td class="text-mute tnum">{{ $b['no'] }}</td>
                             <td class="sel-kode">{{ $b['kd_rup'] }}</td>
                             <td>
-                                <div class="sel-nama truncate" style="max-width:290px" title="{{ $b['nama_paket'] }}">{{ $b['nama_paket'] }}</div>
+                                <div class="sel-nama truncate" style="max-width:360px" title="{{ $b['nama_paket'] }}">{{ $b['nama_paket'] }}</div>
                                 <div class="sel-sub">{{ $b['metode'] }}</div>
                             </td>
                             <td class="truncate" style="max-width:210px" title="{{ $b['satker'] }}">{{ $b['satker'] }}</td>

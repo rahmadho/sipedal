@@ -64,7 +64,7 @@
         <div class="card__head">
             <div>
                 <h2>Daftar Paket RUP</h2>
-                <p>{{ angka($total) }} paket · halaman {{ $halaman }} dari {{ angka(ceil($total / $perHalaman)) }}</p>
+                <p>{{ angka($total) }} paket, halaman {{ $halaman }} dari {{ angka(ceil($total / $perHalaman)) }}</p>
             </div>
             <div class="head-aksi">
                 <span class="badge badge--brand">TA 2026</span>

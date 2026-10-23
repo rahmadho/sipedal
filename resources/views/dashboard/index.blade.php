@@ -30,20 +30,61 @@
         </div>
     </div>
 
-    {{-- ================= BANNER CAKUPAN ================= --}}
-    <div class="banner banner--info">
-        <span class="banner__ikon"><x-ikon nama="info" :ukuran="17" /></span>
-        <div>
-            <strong>Cakupan data:</strong> dari {{ $acuan['klpd_terdaftar'] }} KLPD terdaftar,
-            baru <strong>1 KLPD</strong> yang datanya lengkap
-            ({{ $acuan['klpd_valid'] }} token valid, {{ $acuan['klpd_403'] }} ditolak,
-            {{ $acuan['klpd_kosong'] }} tanpa token).
-            Angka pada halaman ini <strong>belum mewakili kondisi provinsi</strong>.
+    {{-- ================= HERO: KESENJANGAN REALISASI =================
+         Angka utama halaman ini adalah yang belum terealisasi, bukan yang
+         sudah. Itulah masalah yang perlu ditindaklanjuti PPK. --}}
+    <section class="hero" aria-labelledby="hero-judul">
+        <div class="hero__utama">
+            <p class="hero__eyebrow">Realisasi RUP tahun anggaran 2026</p>
+            <h2 class="hero__angka" id="hero-judul">
+                <span class="hero__persen">{{ persen($acuan['belum'] / $acuan['paket_total'] * 100) }}</span>
+                <span class="hero__ket">paket belum terealisasi</span>
+            </h2>
+            <p class="hero__rincian">
+                <strong>{{ angka($acuan['belum']) }}</strong> dari
+                <strong>{{ angka($acuan['paket_total']) }}</strong> paket penyedia belum memiliki
+                proses pengadaan. Sisa <strong>{{ angka($acuan['terealisasi']) }}</strong> paket
+                sudah terealisasi.
+            </p>
+
+            {{-- Bar kesenjangan: satu batang, dua bagian. --}}
+            <div class="hero__bar" role="img"
+                 aria-label="{{ angka($acuan['terealisasi']) }} paket terealisasi, {{ angka($acuan['belum']) }} belum">
+                <span class="hero__bar-isi" style="width: {{ round($acuan['terealisasi'] / $acuan['paket_total'] * 100, 2) }}%"></span>
+            </div>
+            <div class="hero__legenda">
+                <span><i class="hero__tanda hero__tanda--isi"></i>Terealisasi {{ angka($acuan['terealisasi']) }}</span>
+                <span><i class="hero__tanda hero__tanda--kosong"></i>Belum {{ angka($acuan['belum']) }}</span>
+            </div>
+
+            {{-- Peringatan cakupan diletakkan menempel pada angka, karena
+                 inilah yang menentukan seberapa boleh angka itu dipercaya. --}}
+            <p class="hero__cakupan">
+                <x-ikon nama="info" :ukuran="14" />
+                <span>Baru <strong>1 dari {{ $acuan['klpd_terdaftar'] }} KLPD</strong> yang datanya
+                lengkap ({{ $acuan['klpd_valid'] }} token valid, {{ $acuan['klpd_403'] }} ditolak,
+                {{ $acuan['klpd_kosong'] }} tanpa token). Angka ini belum mewakili seluruh KLPD.</span>
+            </p>
         </div>
-        <button class="banner__tutup" type="button" aria-label="Tutup pemberitahuan">
-            <x-ikon nama="x" :ukuran="15" />
-        </button>
-    </div>
+
+        <div class="hero__sisi">
+            <div class="hero__sisi-item">
+                <span class="hero__sisi-label">Total pagu</span>
+                <span class="hero__sisi-nilai">{{ rp($acuan['pagu_total']) }}</span>
+                <span class="hero__sisi-ket">{{ ringkas($acuan['pagu_total']) }} dari {{ angka($acuan['paket_total']) }} paket</span>
+            </div>
+            <div class="hero__sisi-item">
+                <span class="hero__sisi-label">Pagu rata-rata per paket</span>
+                <span class="hero__sisi-nilai">{{ rp($acuan['pagu_rata']) }}</span>
+                <span class="hero__sisi-ket">Tertinggi {{ ringkas($acuan['pagu_maks']) }}</span>
+            </div>
+            <div class="hero__sisi-item">
+                <span class="hero__sisi-label">Satuan kerja terlibat</span>
+                <span class="hero__sisi-nilai">{{ angka($acuan['satker']) }}</span>
+                <span class="hero__sisi-ket">{{ angka($acuan['view_baris']) }} baris proses pengadaan</span>
+            </div>
+        </div>
+    </section>
 
     {{-- ================= KARTU KPI ================= --}}
     <div class="grid grid-kpi" style="margin-bottom:16px">
