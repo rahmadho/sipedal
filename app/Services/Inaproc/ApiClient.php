@@ -260,6 +260,17 @@ class ApiClient
             return 'Ditolak: token tidak valid untuk KLPD ini';
         }
 
+        // 401 = kredensial tidak diterima. Gateway INAPROC membalas
+        // {"error":"Authorization field missing"} bila header auth salah bentuk,
+        // dan itu harus terbaca jelas di pull_log.
+        if ($status === 401) {
+            $message = $this->firstMessage($decoded);
+
+            return $message !== null
+                ? $this->trim('Ditolak: token tidak diterima (HTTP 401) — '.$message)
+                : 'Ditolak: token tidak diterima (HTTP 401)';
+        }
+
         $message = $this->firstMessage($decoded);
 
         return $message !== null

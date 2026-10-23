@@ -46,8 +46,10 @@ return [
     | `Authorization: Bearer <token>`. Default: X-API-Key.
     |
     */
-    'auth_header' => env('INAPROC_AUTH_HEADER', 'X-API-Key'),
-    'auth_scheme' => env('INAPROC_AUTH_SCHEME', ''),
+    // Gateway hanya menerima Bearer; X-API-Key membalas 401
+    // {"error":"Authorization field missing"}.
+    'auth_header' => env('INAPROC_AUTH_HEADER', 'Authorization'),
+    'auth_scheme' => env('INAPROC_AUTH_SCHEME', 'Bearer'),
 
     /*
     |--------------------------------------------------------------------------
