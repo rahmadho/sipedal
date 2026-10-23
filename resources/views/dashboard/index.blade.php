@@ -1,0 +1,306 @@
+@extends('layouts.app')
+
+@section('judul', 'Home')
+
+@section('konten')
+
+    {{-- ================= KEPALA HALAMAN ================= --}}
+    <div class="page-head">
+        <div class="page-head__title">
+            <h1>Ringkasan Pengadaan {{ $tenant->namaPendek() }}</h1>
+            <p>
+                Posisi perencanaan dan realisasi RUP tahun anggaran 2026.
+                Angka dihitung dari {{ angka($acuan['paket_total']) }} paket penyedia
+                dan {{ angka($acuan['view_baris']) }} baris proses pengadaan.
+            </p>
+        </div>
+        <div class="page-head__aksi">
+            <div class="chip chip--brand">
+                <x-ikon nama="calendar" :ukuran="13" />
+                Tahun 2026
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button">
+                <x-ikon nama="download" :ukuran="15" />
+                Ekspor
+            </button>
+            <button class="btn btn-primary btn-sm" type="button">
+                <x-ikon nama="refresh" :ukuran="15" />
+                Segarkan
+            </button>
+        </div>
+    </div>
+
+    {{-- ================= BANNER CAKUPAN ================= --}}
+    <div class="banner banner--info">
+        <span class="banner__ikon"><x-ikon nama="info" :ukuran="17" /></span>
+        <div>
+            <strong>Cakupan data:</strong> dari {{ $acuan['klpd_terdaftar'] }} KLPD terdaftar,
+            baru <strong>1 KLPD</strong> yang datanya lengkap
+            ({{ $acuan['klpd_valid'] }} token valid, {{ $acuan['klpd_403'] }} ditolak,
+            {{ $acuan['klpd_kosong'] }} tanpa token).
+            Angka pada halaman ini <strong>belum mewakili kondisi provinsi</strong>.
+        </div>
+        <button class="banner__tutup" type="button" aria-label="Tutup pemberitahuan">
+            <x-ikon nama="x" :ukuran="15" />
+        </button>
+    </div>
+
+    {{-- ================= KARTU KPI ================= --}}
+    <div class="grid grid-kpi" style="margin-bottom:16px">
+        @foreach ($kpi as $k)
+            <a class="kpi" href="{{ route($k['rute']) }}">
+                <div class="kpi__top">
+                    <span class="kpi__label">{{ $k['label'] }}</span>
+                    <span class="kpi__ikon"><x-ikon :nama="$k['ikon']" :ukuran="17" /></span>
+                </div>
+                <div class="kpi__nilai {{ str_starts_with($k['nilai'], 'Rp') ? 'kpi__nilai--panjang' : '' }}">{{ $k['nilai'] }}</div>
+                <div class="kpi__sub">
+                    <span class="tren tren--{{ $k['tren']['arah'] }}">
+                        <x-ikon :nama="$k['tren']['arah'] === 'naik' ? 'arrow-up' : ($k['tren']['arah'] === 'turun' ? 'arrow-down' : 'dot')" :ukuran="11" />
+                        {{ $k['tren']['nilai'] }}
+                    </span>
+                    <span>{{ $k['sub'] }}</span>
+                </div>
+            </a>
+        @endforeach
+    </div>
+
+    {{-- ================= GRAFIK UTAMA ================= --}}
+    <div class="grid grid-2-1" style="margin-bottom:16px">
+
+        {{-- Tren paket per bulan --}}
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Tren Paket RUP per Bulan</h2>
+                    <p>Jumlah paket yang dibuat pada tiap bulan tahun anggaran 2026</p>
+                </div>
+                <div class="head-aksi">
+                    <span class="badge badge--netral">{{ angka(array_sum(array_column($tren, 'nilai'))) }} paket</span>
+                </div>
+            </div>
+            <div class="card__body">
+                @php $maks = max(array_column($tren, 'nilai')); @endphp
+                <div class="chart-batang" role="img" aria-label="Grafik tren paket RUP per bulan">
+                    @foreach ($tren as $t)
+                        <div class="chart-batang__kol" title="{{ $t['label'] }}: {{ angka($t['nilai']) }} paket">
+                            <div class="chart-batang__isi" style="height: {{ round($t['nilai'] / $maks * 100) }}%"></div>
+                            <span class="chart-batang__label">{{ $t['label'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- Komposisi sumber realisasi --}}
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Komposisi Realisasi</h2>
+                    <p>Per sumber proses pengadaan</p>
+                </div>
+            </div>
+            <div class="card__body">
+                @php
+                    $total = array_sum(array_column($komposisi, 'total'));
+                    $warna = ['#1d4ed8', '#10b981', '#f59e0b', '#a81f45'];
+                    $segmen = [];
+                    $mulai = 0;
+                    foreach ($komposisi as $i => $k) {
+                        $bagian = $total > 0 ? $k['total'] / $total * 100 : 0;
+                        $segmen[] = $warna[$i % count($warna)] . ' ' . round($mulai, 2) . '% ' . round($mulai + $bagian, 2) . '%';
+                        $mulai += $bagian;
+                    }
+                @endphp
+
+                <div class="row gap-5 wrap" style="align-items:flex-start">
+                    <div class="chart-donat" style="--seg: {{ implode(',', $segmen) }}">
+                        <div class="chart-donat__tengah">
+                            <b>{{ angka($total) }}</b>
+                            <span>Baris</span>
+                        </div>
+                    </div>
+
+                    <div class="legend grow">
+                        @foreach ($komposisi as $i => $k)
+                            <div class="legend__item">
+                                <span class="legend__warna" style="background:{{ $warna[$i % count($warna)] }}"></span>
+                                <span class="legend__label">{{ $k['label'] }}</span>
+                                <span class="legend__nilai">{{ angka($k['total']) }}</span>
+                                <span class="legend__pct">{{ persen($k['total'] / $total * 100, 0) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= SATKER & METODE ================= --}}
+    <div class="grid grid-2" style="margin-bottom:16px">
+
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Satuan Kerja Teratas</h2>
+                    <p>Berdasarkan jumlah baris realisasi</p>
+                </div>
+                <div class="head-aksi">
+                    <a class="btn btn-ghost btn-sm" href="{{ route('master.satker') }}">
+                        Semua satker
+                        <x-ikon nama="arrow-right" :ukuran="13" />
+                    </a>
+                </div>
+            </div>
+            <div class="card__body">
+                @php $maksSatker = max(array_column($topSatker, 'jumlah')); @endphp
+                <div class="bar-list">
+                    @foreach ($topSatker as $s)
+                        <div>
+                            <div class="bar-item__head">
+                                <span class="bar-item__label" title="{{ $s['nama'] }}">{{ $s['nama'] }}</span>
+                                <span class="bar-item__nilai">{{ angka($s['jumlah']) }}</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: {{ round($s['jumlah'] / $maksSatker * 100) }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Pagu per Metode Pengadaan</h2>
+                    <p>Sebaran {{ angka($acuan['paket_total']) }} paket penyedia</p>
+                </div>
+            </div>
+            <div class="card__body">
+                @php $maksMetode = max(array_column($metode, 'jumlah')); @endphp
+                <div class="bar-list">
+                    @foreach ($metode as $m)
+                        <div>
+                            <div class="bar-item__head">
+                                <span class="bar-item__label">{{ $m['label'] }}</span>
+                                <span class="bar-item__nilai">{{ angka($m['jumlah']) }}</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill bar-fill--netral" style="width: {{ round($m['jumlah'] / $maksMetode * 100) }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= STATUS & LOG ================= --}}
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Status Proses Pengadaan</h2>
+                    <p>Tender, non-tender, dan e-katalog</p>
+                </div>
+            </div>
+            <div class="card__body col gap-5">
+
+                <div>
+                    <div class="label-bagian">Tender · 94 paket</div>
+                    @foreach ($statusTender as $s)
+                        <div class="row-between" style="padding:5px 0">
+                            <span class="row gap-2 text-sm">
+                                <span class="badge__dot" style="width:7px;height:7px;background:var(--{{ $s['warna'] === 'hijau' ? 'green-600' : ($s['warna'] === 'merah' ? 'red-600' : 'brand-600') }})"></span>
+                                {{ $s['label'] }}
+                            </span>
+                            <span class="text-sm fw-600 tnum">{{ angka($s['jumlah']) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="pemisah" style="margin:0"></div>
+
+                <div>
+                    <div class="label-bagian">Non-Tender · 1.681 paket</div>
+                    @foreach ($statusNontender as $s)
+                        <div class="row-between" style="padding:5px 0">
+                            <span class="row gap-2 text-sm">
+                                <span class="badge__dot" style="width:7px;height:7px;background:var(--{{ $s['warna'] === 'hijau' ? 'green-600' : ($s['warna'] === 'merah' ? 'red-600' : 'brand-600') }})"></span>
+                                {{ $s['label'] }}
+                            </span>
+                            <span class="text-sm fw-600 tnum">{{ angka($s['jumlah']) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="pemisah" style="margin:0"></div>
+
+                <div>
+                    <div class="label-bagian">E-Katalog · 5.770 paket</div>
+                    @php $totalEkat = array_sum(array_column($statusEkatalog, 'jumlah')); @endphp
+                    <div class="bar-track" style="height:10px;display:flex;gap:2px;background:none">
+                        @foreach ($statusEkatalog as $s)
+                            <div
+                                style="height:100%;width:{{ round($s['jumlah'] / $totalEkat * 100, 2) }}%;background:var(--{{ $s['warna'] === 'hijau' ? 'green-600' : ($s['warna'] === 'merah' ? 'red-600' : ($s['warna'] === 'amber' ? 'amber-600' : 'brand-600')) }});border-radius:2px"
+                                title="{{ $s['label'] }}: {{ angka($s['jumlah']) }}"
+                            ></div>
+                        @endforeach
+                    </div>
+                    <div class="row gap-4 wrap" style="margin-top:9px">
+                        <span class="text-xs text-mute">Selesai {{ angka(602) }}</span>
+                        <span class="text-xs text-mute">Diproses {{ angka(3575) }}</span>
+                        <span class="text-xs text-mute">Batal {{ angka(988) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2>Sinkronisasi Terakhir</h2>
+                    <p>Enam catatan tarik data terbaru</p>
+                </div>
+                <div class="head-aksi">
+                    <a class="btn btn-ghost btn-sm" href="{{ route('setting.log') }}">
+                        Semua log
+                        <x-ikon nama="arrow-right" :ukuran="13" />
+                    </a>
+                </div>
+            </div>
+            <div class="card__body card__body--flush">
+                <div class="tabel-wrap">
+                    <table class="tabel tabel--padat">
+                        <caption class="sr-only">Enam catatan sinkronisasi terakhir</caption>
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Endpoint</th>
+                                <th>Status</th>
+                                <th class="num">Baris</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($logTerakhir as $l)
+                                <tr>
+                                    <td class="nowrap mono text-xs">{{ $l['waktu'] }}</td>
+                                    <td class="truncate" style="max-width:180px">{{ $l['endpoint'] }}</td>
+                                    <td>
+                                        <span class="badge badge--{{ $l['status'] === 'OK' ? 'hijau' : ($l['status'] === 'GAGAL' ? 'merah' : ($l['status'] === 'FORBIDDEN' ? 'merah' : 'netral')) }}">
+                                            {{ $l['status'] }}
+                                        </span>
+                                    </td>
+                                    <td class="num">{{ angka($l['rows']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endsection

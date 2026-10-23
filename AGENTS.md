@@ -24,6 +24,23 @@ berkas, audit menyeluruh, suite test panjang) **didelegasikan ke subagent**
 agar sesi utama tetap bebas menerima instruksi lain. Sesi utama hanya
 menggabungkan hasil dan melaporkan ringkasan.
 
+## 2a. Demo selalu lewat tunnel, jangan pernah localhost
+
+Pemilik proyek **tidak dapat membuka `localhost`** — localhost berjalan di
+mesin agen, bukan di perangkatnya. Setiap demo yang perlu dilihat manusia
+wajib disajikan melalui tunnel publik dan URL-nya dilaporkan.
+
+- Tool tersedia: `cloudflared` di `~/.local/bin/cloudflared`
+- Jalankan server di latar belakang, lalu:
+  `cloudflared tunnel --url http://127.0.0.1:<port> --no-autoupdate`
+- Ambil URL `https://<acak>.trycloudflare.com` dari log proses, bukan ditebak.
+- **Wajib:** percayai proxy agar `asset()` menghasilkan `https://`. Tanpa
+  `trustProxies`, CSS dan logo dimuat lewat `http://` dan diblokir browser
+  sebagai mixed content — halaman tampil tanpa gaya. Konfigurasinya ada di
+  `bootstrap/app.php`.
+- Jangan pernah melaporkan `http://127.0.0.1:...` atau `http://localhost:...`
+  sebagai tautan demo kepada pengguna.
+
 ## 3. Rahasia
 
 - Token KLPD **tidak pernah** ditulis di chat, log, commit, atau keluaran
