@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Support\Mock\Mock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Autentikasi tahap UI/UX — TANPA basis data.
@@ -27,7 +29,7 @@ class AuthController extends Controller
     public function masuk(Request $request)
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'username' => ['required', 'string', 'min:3'],
             'peran' => ['nullable', 'string'],
         ]);
 
@@ -43,7 +45,9 @@ class AuthController extends Controller
         $request->session()->put([
             'peran' => $peran,
             'nama' => $demo['nama'],
-            'email' => $data['email'],
+            'username' => $data['username'],
+            // Email opsional dan tidak unik: hanya dipakai bila pengguna memilikinya.
+            'email' => $demo['email'] ?? null,
             'jabatan' => $demo['jabatan'],
             'nip' => $demo['nip'],
             'telepon' => $demo['telepon'],

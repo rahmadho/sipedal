@@ -156,7 +156,7 @@
                     <div class="dropdown" id="user-menu-panel" hidden>
                         <div class="dropdown__head">
                             <strong>{{ session('nama', 'Pengguna') }}</strong>
-                            <span>{{ session('email', '—') }}</span>
+                            <span>{{ session('email') ?: session('username', '—') }}</span>
                         </div>
                         <a class="dropdown__item" href="{{ route('setting.profile') }}">
                             <x-ikon nama="user" :ukuran="15" /> Profil Saya

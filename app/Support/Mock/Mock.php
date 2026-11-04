@@ -157,7 +157,8 @@ class Mock
 
     public const USER_DEMO = [
         'nama' => 'Rahmat Hidayat, S.T.',
-        'email' => 'rahmat.hidayat@padang.go.id',
+        'username' => 'rahmat.hidayat',
+        'email' => 'rahmat.hidayat@padang.go.id', // opsional, tidak wajib & tidak unik
         'peran' => 'super_admin',
         'jabatan' => 'Kepala Bidang Pengadaan Barang/Jasa',
         'nip' => '19850412 201001 1 008',

@@ -92,16 +92,16 @@
                 @csrf
 
                 <div class="field">
-                    <label for="email">Email dinas</label>
+                    <label for="username">Nama pengguna</label>
                     <div class="input-wrap">
-                        <span class="input-ikon"><x-ikon nama="mail" :ukuran="16" /></span>
+                        <span class="input-ikon"><x-ikon nama="user" :ukuran="16" /></span>
                         <input
                             class="input"
-                            type="email"
-                            id="email"
-                            name="email"
-                            value="{{ old('email', 'rahmat.hidayat@padang.go.id') }}"
-                            placeholder="nama@instansi.go.id"
+                            type="text"
+                            id="username"
+                            name="username"
+                            value="{{ old('username', 'rahmat.hidayat') }}"
+                            placeholder="nama.pengguna"
                             autocomplete="username"
                             required
                             autofocus
@@ -149,7 +149,7 @@
             {{-- Pemilih peran: memudahkan menilai tampilan untuk setiap peran. --}}
             <form method="POST" action="{{ route('login.aksi') }}" id="form-peran">
                 @csrf
-                <input type="hidden" name="email" value="rahmat.hidayat@padang.go.id">
+                <input type="hidden" name="username" value="rahmat.hidayat">
                 <input type="hidden" name="sandi" value="demo">
 
                 <label class="label-bagian" for="peran-cepat">Masuk cepat sebagai</label>

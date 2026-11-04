@@ -33,10 +33,14 @@
                     <div class="pemisah"></div>
 
                     <dl class="dl" style="text-align:left">
+                        <dt>Nama pengguna</dt>
+                        <dd class="mono text-xs">{{ session('username', $user['username']) }}</dd>
                         <dt>NIP</dt>
                         <dd class="mono text-xs">{{ $user['nip'] }}</dd>
                         <dt>Email</dt>
-                        <dd class="text-xs" style="word-break:break-all">{{ session('email', $user['email']) }}</dd>
+                        <dd class="text-xs" style="word-break:break-all">
+                            {{ session('email', $user['email']) ?: 'Belum diisi' }}
+                        </dd>
                         <dt>Telepon</dt>
                         <dd class="text-xs">{{ $user['telepon'] }}</dd>
                         <dt>KLPD</dt>
@@ -90,6 +94,10 @@
                             <input class="input" id="nama" value="{{ session('nama', $user['nama']) }}">
                         </div>
                         <div class="field">
+                            <label for="username">Nama Pengguna</label>
+                            <input class="input mono" id="username" value="{{ session('username', $user['username']) }}">
+                        </div>
+                        <div class="field">
                             <label for="jabatan">Jabatan</label>
                             <input class="input" id="jabatan" value="{{ session('jabatan', $user['jabatan']) }}">
                         </div>
@@ -103,8 +111,15 @@
                         </div>
                     </div>
                     <div class="field" style="margin-top:14px">
-                        <label for="email-profil">Email</label>
+                        <label for="email-profil">
+                            Email
+                            <span class="text-mute fw-500" style="font-weight:500">(opsional)</span>
+                        </label>
                         <input class="input" id="email-profil" type="email" value="{{ session('email', $user['email']) }}">
+                        <span class="field__hint">
+                            Boleh dikosongkan. Dua pengguna boleh memakai email yang sama,
+                            karena yang dipakai untuk masuk adalah nama pengguna.
+                        </span>
                     </div>
 
                     <div class="row" style="justify-content:flex-end;margin-top:16px">
