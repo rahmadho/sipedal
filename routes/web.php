@@ -53,6 +53,7 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
     Route::get('/setting/command', [SettingController::class, 'command'])->name('setting.command');
     Route::get('/setting/pengaturan', [SettingController::class, 'pengaturan'])->name('setting.pengaturan');
     Route::get('/setting/profile', [SettingController::class, 'profile'])->name('setting.profile');
+    Route::post('/setting/profile', [SettingController::class, 'simpanProfile'])->name('setting.profile.simpan');
 
     /* ---------------- Pratinjau tema (khusus Super Admin) ---------------- */
     Route::get('/pratinjau-tema/{tema}', function (string $tema) {

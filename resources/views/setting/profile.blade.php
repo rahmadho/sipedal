@@ -36,13 +36,21 @@
                         <dt>Nama pengguna</dt>
                         <dd class="mono text-xs">{{ session('username', $user['username']) }}</dd>
                         <dt>NIP</dt>
-                        <dd class="mono text-xs">{{ $user['nip'] }}</dd>
+                        <dd class="mono text-xs">{{ session('nip', $user['nip']) }}</dd>
                         <dt>Email</dt>
                         <dd class="text-xs" style="word-break:break-all">
                             {{ session('email', $user['email']) ?: 'Belum diisi' }}
                         </dd>
+                        <dt>Satuan kerja</dt>
+                        <dd class="text-xs">
+                            @if (session('rup_stk_id'))
+                                {{ \App\Support\Mock\SatkerPilihan::nama((int) session('rup_stk_id')) ?: ('Kode ' . session('rup_stk_id')) }}
+                            @else
+                                <span class="text-mute">Belum diatur</span>
+                            @endif
+                        </dd>
                         <dt>Telepon</dt>
-                        <dd class="text-xs">{{ $user['telepon'] }}</dd>
+                        <dd class="text-xs">{{ session('telepon', $user['telepon']) }}</dd>
                         <dt>KLPD</dt>
                         <dd class="text-xs">{{ $tenant->nama() }}</dd>
                         <dt>Lingkup</dt>
@@ -80,7 +88,22 @@
         {{-- Formulir --}}
         <div class="col gap-4">
 
-            <div class="card">
+            @if (session('status'))
+                <div class="banner banner--sukses">
+                    <span class="banner__ikon"><x-ikon nama="check" :ukuran="16" /></span>
+                    <div>{{ session('status') }}</div>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="banner banner--bahaya">
+                    <span class="banner__ikon"><x-ikon nama="alert" :ukuran="16" /></span>
+                    <div>{{ $errors->first() }}</div>
+                </div>
+            @endif
+
+            <form class="card" method="POST" action="{{ route('setting.profile.simpan') }}">
+                @csrf
                 <div class="card__head">
                     <div>
                         <h2>Data Pribadi</h2>
@@ -91,45 +114,66 @@
                     <div class="grid grid-2 gap-4">
                         <div class="field">
                             <label for="nama">Nama Lengkap</label>
-                            <input class="input" id="nama" value="{{ session('nama', $user['nama']) }}">
+                            <input class="input" id="nama" name="nama" value="{{ old('nama', session('nama', $user['nama'])) }}" required>
                         </div>
                         <div class="field">
                             <label for="username">Nama Pengguna</label>
-                            <input class="input mono" id="username" value="{{ session('username', $user['username']) }}">
+                            <input class="input mono" id="username" value="{{ session('username', $user['username']) }}" disabled title="Nama pengguna tidak dapat diubah">
                         </div>
                         <div class="field">
                             <label for="jabatan">Jabatan</label>
-                            <input class="input" id="jabatan" value="{{ session('jabatan', $user['jabatan']) }}">
+                            <input class="input" id="jabatan" name="jabatan" value="{{ old('jabatan', session('jabatan', $user['jabatan'])) }}">
                         </div>
                         <div class="field">
                             <label for="nip">NIP</label>
-                            <input class="input" id="nip" value="{{ $user['nip'] }}" class="mono">
+                            <input class="input mono" id="nip" name="nip" value="{{ old('nip', session('nip', $user['nip'])) }}">
                         </div>
                         <div class="field">
                             <label for="telp">Telepon</label>
-                            <input class="input" id="telp" value="{{ $user['telepon'] }}">
+                            <input class="input" id="telp" name="telepon" value="{{ old('telepon', session('telepon', $user['telepon'])) }}">
+                        </div>
+                        <div class="field">
+                            <label for="email-profil">
+                                Email
+                                <span class="text-mute fw-500">(opsional)</span>
+                            </label>
+                            <input class="input" id="email-profil" name="email" type="email" value="{{ old('email', session('email', $user['email'])) }}">
                         </div>
                     </div>
+
                     <div class="field" style="margin-top:14px">
-                        <label for="email-profil">
-                            Email
-                            <span class="text-mute fw-500" style="font-weight:500">(opsional)</span>
+                        <label for="rup_stk_id">
+                            Satuan Kerja
+                            @if (\App\Support\SatkerFilter::wajib(session('peran')))
+                                <span class="wajib" style="color:var(--red-600)">* (Wajib untuk peran ini)</span>
+                            @else
+                                <span class="text-mute fw-500">(opsional)</span>
+                            @endif
                         </label>
-                        <input class="input" id="email-profil" type="email" value="{{ session('email', $user['email']) }}">
+                        <select class="select js-combobox-asal" id="rup_stk_id" name="rup_stk_id"
+                                data-placeholder="Pilih satuan kerja" data-cari="Cari satuan kerja" data-keterangan="1">
+                            <option value="">Pilih satuan kerja</option>
+                            @foreach ($satker as $s)
+                                <option value="{{ $s['nilai'] }}"
+                                    @selected((string) old('rup_stk_id', session('rup_stk_id')) === (string) $s['nilai'])
+                                    data-keterangan="{{ $s['keterangan'] }}">
+                                    {{ $s['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
                         <span class="field__hint">
-                            Boleh dikosongkan. Dua pengguna boleh memakai email yang sama,
-                            karena yang dipakai untuk masuk adalah nama pengguna.
+                            Satuan kerja digunakan untuk menyaring data yang Anda lihat pada dashboard dan laporan.
                         </span>
                     </div>
 
-                    <div class="row" style="justify-content:flex-end;margin-top:16px">
-                        <button class="btn btn-primary btn-sm" type="button">
+                    <div class="row" style="justify-content:flex-end;margin-top:20px">
+                        <button class="btn btn-primary btn-sm" type="submit">
                             <x-ikon nama="check" :ukuran="14" />
                             Simpan Data
                         </button>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <div class="card">
                 <div class="card__head">
