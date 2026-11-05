@@ -629,6 +629,25 @@ table { border-collapse: collapse; width: 100%; }
     font-weight: 600;
     color: var(--text-soft);
 }
+
+.topbar__periode-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .14s var(--ease), background .14s var(--ease);
+}
+.topbar__periode-btn:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+}
+.topbar__periode-btn svg { color: var(--brand-600); }
+.topbar__periode-btn .periode-label { letter-spacing: .2px; }
 .topbar__tenant img { height: 20px; width: auto; }
 
 .user-menu { position: relative; }

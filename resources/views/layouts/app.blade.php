@@ -134,6 +134,59 @@
             </div>
 
             <div class="topbar__aksi">
+                @php
+                    $daftarBulanNavbar = [
+                        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+                        5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+                        9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+                    ];
+                    $daftarBulanLengkap = [
+                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                    ];
+                    $labelPeriode = ($daftarBulanNavbar[$sesiBulan] ?? $sesiBulan) . ' ' . $sesiTahun;
+                @endphp
+
+                {{-- Trigger Tombol Pemilih Periode Global --}}
+                <div class="periode-picker" style="position:relative">
+                    <button class="topbar__periode-btn" type="button" id="periode-btn" aria-haspopup="true" aria-expanded="false" title="Ubah tahun dan bulan acuan data">
+                        <x-ikon nama="calendar" :ukuran="15" />
+                        <span class="periode-label">{{ $labelPeriode }}</span>
+                        <x-ikon nama="chevron-down" :ukuran="12" />
+                    </button>
+
+                    {{-- Popover Dropdown Filter Periode --}}
+                    <div class="dropdown dropdown--periode" id="periode-panel" hidden style="min-width:240px;padding:12px;right:0">
+                        <div class="dropdown__head" style="padding:0 0 8px 0;margin-bottom:10px">
+                            <strong style="font-size:12.5px">Filter Periode Data</strong>
+                            <span style="font-size:11px">Pilih tahun dan bulan acuan laporan</span>
+                        </div>
+                        <form method="POST" action="{{ route('dashboard.periode.ganti') }}">
+                            @csrf
+                            <div class="field" style="margin-bottom:8px">
+                                <label for="periode-bulan" style="font-size:11px">Bulan</label>
+                                <select name="bulan" id="periode-bulan" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
+                                    @foreach ($daftarBulanLengkap as $noBulan => $lblBulan)
+                                        <option value="{{ $noBulan }}" @selected($sesiBulan === $noBulan)>{{ $lblBulan }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="field" style="margin-bottom:12px">
+                                <label for="periode-tahun" style="font-size:11px">Tahun Anggaran</label>
+                                <select name="tahun" id="periode-tahun" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
+                                    @foreach ([2023, 2024, 2025, 2026, 2027] as $th)
+                                        <option value="{{ $th }}" @selected($sesiTahun === $th)>{{ $th }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button class="btn btn-primary btn-sm btn-block" type="submit" style="width:100%">
+                                Terapkan Periode
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="topbar__tenant" title="KLPD aktif">
                     <img src="{{ asset($tenant->logoPemda()) }}" alt="">
                     <span>{{ $tenant->kode() }}</span>
@@ -225,6 +278,35 @@
 
         document.addEventListener('click', function (e) {
             if (!wadah.contains(e.target)) {
+                panel.hidden = true;
+                tombol.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                panel.hidden = true;
+                tombol.setAttribute('aria-expanded', 'false');
+            }
+        });
+    })();
+
+    // Dropdown pemilih periode global.
+    (function () {
+        var tombol = document.getElementById('periode-btn');
+        var panel = document.getElementById('periode-panel');
+        var wadah = document.querySelector('.periode-picker');
+        if (!tombol || !panel) return;
+
+        tombol.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var terbuka = !panel.hidden;
+            panel.hidden = terbuka;
+            tombol.setAttribute('aria-expanded', terbuka ? 'false' : 'true');
+        });
+
+        document.addEventListener('click', function (e) {
+            if (wadah && !wadah.contains(e.target)) {
                 panel.hidden = true;
                 tombol.setAttribute('aria-expanded', 'false');
             }

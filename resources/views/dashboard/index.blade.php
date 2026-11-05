@@ -31,24 +31,10 @@
             </p>
         </div>
         <div class="page-head__aksi">
-            {{-- Form Aksi Cepat Beralih Periode (Tahun & Bulan) --}}
-            <form method="POST" action="{{ route('dashboard.periode.ganti') }}" class="row gap-2" style="align-items:center;background:var(--surface);padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-lg)">
-                @csrf
-                <div class="row gap-1" style="align-items:center;color:var(--text-mute);font-size:12px">
-                    <x-ikon nama="calendar" :ukuran="14" />
-                    <span class="fw-600 text-xs">Periode:</span>
-                </div>
-                <select name="bulan" class="select select--sm" style="height:30px;padding:4px 24px 4px 8px;font-size:12px;width:115px" onchange="this.form.submit()">
-                    @foreach ($daftarBulan as $noBulan => $lblBulan)
-                        <option value="{{ $noBulan }}" @selected($sesiBulan === $noBulan)>{{ $lblBulan }}</option>
-                    @endforeach
-                </select>
-                <select name="tahun" class="select select--sm" style="height:30px;padding:4px 24px 4px 8px;font-size:12px;width:85px" onchange="this.form.submit()">
-                    @foreach ([2024, 2025, 2026, 2027] as $th)
-                        <option value="{{ $th }}" @selected($sesiTahun === $th)>{{ $th }}</option>
-                    @endforeach
-                </select>
-            </form>
+            <div class="chip chip--brand">
+                <x-ikon nama="calendar" :ukuran="13" />
+                Periode {{ $namaBulanSesi }} {{ $sesiTahun }}
+            </div>
 
             <button class="btn btn-ghost btn-sm" type="button">
                 <x-ikon nama="download" :ukuran="15" />
