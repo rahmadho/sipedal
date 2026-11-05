@@ -32,6 +32,10 @@ class ViewServiceProvider extends ServiceProvider
                 }
             }
 
+            $bisaLintasKlpd = in_array($peran, ['super_admin'], true);
+            $sesiKdKlpd = session('kd_klpd', app(Tenant::class)->kode());
+            $namaKlpd = \App\Support\KlpdList::nama($sesiKdKlpd) ?? app(Tenant::class)->nama();
+
             $view->with([
                 'menu' => $peran ? Menu::untuk($peran) : [],
                 'tenant' => $view->getData()['tenant'] ?? app(Tenant::class),
@@ -41,7 +45,10 @@ class ViewServiceProvider extends ServiceProvider
                 'namaSatker' => $namaSatker,
                 'sesiTahun' => (int) session('tahun', now()->year),
                 'sesiBulan' => (int) session('bulan', now()->month),
-                'sesiKdKlpd' => session('kd_klpd', app(Tenant::class)->kode()),
+                'sesiKdKlpd' => $sesiKdKlpd,
+                'namaKlpd' => $namaKlpd,
+                'bisaLintasKlpd' => $bisaLintasKlpd,
+                'daftarKlpd' => \App\Support\KlpdList::semua(),
             ]);
         });
     }

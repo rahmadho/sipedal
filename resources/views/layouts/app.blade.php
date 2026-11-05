@@ -148,40 +148,62 @@
                     $labelPeriode = ($daftarBulanNavbar[$sesiBulan] ?? $sesiBulan) . ' ' . $sesiTahun;
                 @endphp
 
-                {{-- Trigger Tombol Pemilih Periode Global --}}
+                {{-- Trigger Tombol Pemilih Periode & KLPD Global --}}
                 <div class="periode-picker" style="position:relative">
-                    <button class="topbar__periode-btn" type="button" id="periode-btn" aria-haspopup="true" aria-expanded="false" title="Ubah tahun dan bulan acuan data">
+                    <button class="topbar__periode-btn" type="button" id="periode-btn" aria-haspopup="true" aria-expanded="false" title="Ubah konteks data (KLPD, tahun, bulan)">
                         <x-ikon nama="calendar" :ukuran="15" />
-                        <span class="periode-label">{{ $labelPeriode }}</span>
+                        <span class="periode-label">
+                            @if (!empty($bisaLintasKlpd))
+                                <span class="badge badge--brand" style="padding:2px 5px;font-size:10px;margin-right:4px">{{ $sesiKdKlpd }}</span>
+                            @endif
+                            {{ $labelPeriode }}
+                        </span>
                         <x-ikon nama="chevron-down" :ukuran="12" />
                     </button>
 
-                    {{-- Popover Dropdown Filter Periode --}}
-                    <div class="dropdown dropdown--periode" id="periode-panel" hidden style="min-width:240px;padding:12px;right:0">
+                    {{-- Popover Dropdown Filter Konteks Data --}}
+                    <div class="dropdown dropdown--periode" id="periode-panel" hidden style="min-width:280px;padding:14px;right:0">
                         <div class="dropdown__head" style="padding:0 0 8px 0;margin-bottom:10px">
-                            <strong style="font-size:12.5px">Filter Periode Data</strong>
-                            <span style="font-size:11px">Pilih tahun dan bulan acuan laporan</span>
+                            <strong style="font-size:12.5px">Filter Konteks Data</strong>
+                            <span style="font-size:11px">Pilih KLPD, tahun, dan bulan acuan laporan</span>
                         </div>
                         <form method="POST" action="{{ route('dashboard.periode.ganti') }}">
                             @csrf
-                            <div class="field" style="margin-bottom:8px">
-                                <label for="periode-bulan" style="font-size:11px">Bulan</label>
-                                <select name="bulan" id="periode-bulan" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
-                                    @foreach ($daftarBulanLengkap as $noBulan => $lblBulan)
-                                        <option value="{{ $noBulan }}" @selected($sesiBulan === $noBulan)>{{ $lblBulan }}</option>
-                                    @endforeach
-                                </select>
+
+                            @if (!empty($bisaLintasKlpd))
+                                <div class="field" style="margin-bottom:10px">
+                                    <label for="periode-klpd" style="font-size:11px">Wilayah / KLPD</label>
+                                    <select name="kd_klpd" id="periode-klpd" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
+                                        @foreach ($daftarKlpd as $klpd)
+                                            <option value="{{ $klpd['kode'] }}" @selected($sesiKdKlpd === $klpd['kode'])>
+                                                {{ $klpd['kode'] }} — {{ $klpd['nama'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
+                            <div class="grid grid-2 gap-2" style="margin-bottom:12px">
+                                <div class="field">
+                                    <label for="periode-bulan" style="font-size:11px">Bulan</label>
+                                    <select name="bulan" id="periode-bulan" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
+                                        @foreach ($daftarBulanLengkap as $noBulan => $lblBulan)
+                                            <option value="{{ $noBulan }}" @selected($sesiBulan === $noBulan)>{{ $lblBulan }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="periode-tahun" style="font-size:11px">Tahun</label>
+                                    <select name="tahun" id="periode-tahun" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
+                                        @foreach ([2023, 2024, 2025, 2026, 2027] as $th)
+                                            <option value="{{ $th }}" @selected($sesiTahun === $th)>{{ $th }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
-                            <div class="field" style="margin-bottom:12px">
-                                <label for="periode-tahun" style="font-size:11px">Tahun Anggaran</label>
-                                <select name="tahun" id="periode-tahun" class="select select--sm" style="height:32px;padding:4px 24px 4px 8px;font-size:12px">
-                                    @foreach ([2023, 2024, 2025, 2026, 2027] as $th)
-                                        <option value="{{ $th }}" @selected($sesiTahun === $th)>{{ $th }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+
                             <button class="btn btn-primary btn-sm btn-block" type="submit" style="width:100%">
-                                Terapkan Periode
+                                Terapkan Perubahan
                             </button>
                         </form>
                     </div>

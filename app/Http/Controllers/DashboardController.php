@@ -25,15 +25,28 @@ class DashboardController extends Controller
 
     public function gantiPeriode(Request $request)
     {
-        $data = $request->validate([
+        $rules = [
             'tahun' => ['required', 'integer', 'min:2020', 'max:2030'],
             'bulan' => ['required', 'integer', 'min:1', 'max:12'],
-        ]);
+        ];
 
-        session([
+        $peran = session('peran');
+        if (in_array($peran, ['super_admin'], true)) {
+            $rules['kd_klpd'] = ['nullable', 'string', 'max:10'];
+        }
+
+        $data = $request->validate($rules);
+
+        $update = [
             'tahun' => (int) $data['tahun'],
             'bulan' => (int) $data['bulan'],
-        ]);
+        ];
+
+        if (!empty($data['kd_klpd'])) {
+            $update['kd_klpd'] = strtoupper($data['kd_klpd']);
+        }
+
+        session($update);
 
         $namaBulan = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -41,6 +54,8 @@ class DashboardController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ][$data['bulan']] ?? '';
 
-        return redirect()->back()->with('status_periode', "Periode data berhasil diubah ke {$namaBulan} {$data['tahun']}.");
+        $infoKlpd = !empty($data['kd_klpd']) ? ' (' . $data['kd_klpd'] . ')' : '';
+
+        return redirect()->back()->with('status_periode', "Konteks data berhasil diperbarui ke {$namaBulan} {$data['tahun']}{$infoKlpd}.");
     }
 }
