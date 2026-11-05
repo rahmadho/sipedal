@@ -18,7 +18,7 @@ class ViewServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        View::composer(['layouts.app', 'auth.login'], function ($view) {
+        View::composer('*', function ($view) {
             $peran = session('peran');
             $rupStkId = session('rup_stk_id');
             $namaSatker = null;
@@ -39,6 +39,9 @@ class ViewServiceProvider extends ServiceProvider
                 'saringanSatker' => \App\Support\SatkerFilter::berlakunya(session()->all()),
                 'rupStkId' => $rupStkId,
                 'namaSatker' => $namaSatker,
+                'sesiTahun' => (int) session('tahun', now()->year),
+                'sesiBulan' => (int) session('bulan', now()->month),
+                'sesiKdKlpd' => session('kd_klpd', app(Tenant::class)->kode()),
             ]);
         });
     }

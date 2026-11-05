@@ -51,6 +51,7 @@ class AuthController extends Controller
         }
 
         $demo = Mock::USER_DEMO;
+        $tenant = app(\App\Support\Tenant::class);
 
         $request->session()->regenerate();
         $request->session()->put([
@@ -64,6 +65,9 @@ class AuthController extends Controller
             'telepon' => $demo['telepon'],
             'terakhir_masuk' => $demo['terakhir_masuk'],
             'rup_stk_id' => ! empty($data['rup_stk_id']) ? (int) $data['rup_stk_id'] : null,
+            'kd_klpd' => $tenant->kode(),
+            'tahun' => (int) now()->year,
+            'bulan' => (int) now()->month,
         ]);
 
         return Redirect::route('dashboard');

@@ -29,6 +29,7 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
 
     /* ---------------- Main ---------------- */
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/periode/ganti', [DashboardController::class, 'gantiPeriode'])->name('dashboard.periode.ganti');
     Route::get('/perencanaan', [PerencanaanController::class, 'index'])->name('perencanaan');
     Route::get('/realisasi', [RealisasiController::class, 'index'])->name('realisasi');
     Route::get('/klaim', [KlaimController::class, 'index'])->name('klaim');

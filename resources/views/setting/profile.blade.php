@@ -49,10 +49,12 @@
                                 <span class="text-mute">Belum diatur</span>
                             @endif
                         </dd>
+                        <dt>KLPD Aktif</dt>
+                        <dd class="text-xs mono">{{ session('kd_klpd', $tenant->kode()) }} · {{ $tenant->nama() }}</dd>
+                        <dt>Tahun &amp; Bulan</dt>
+                        <dd class="text-xs">Tahun {{ session('tahun', now()->year) }} (Bulan {{ session('bulan', now()->month) }})</dd>
                         <dt>Telepon</dt>
                         <dd class="text-xs">{{ session('telepon', $user['telepon']) }}</dd>
-                        <dt>KLPD</dt>
-                        <dd class="text-xs">{{ $tenant->nama() }}</dd>
                         <dt>Lingkup</dt>
                         <dd class="text-xs">{{ \App\Support\Menu::lingkupPeran(session('peran', 'operator')) }}</dd>
                     </dl>
