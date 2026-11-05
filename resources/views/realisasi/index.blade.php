@@ -64,7 +64,7 @@
 
             <div class="field field--md">
                 <label for="sumber">Sumber</label>
-                <select class="select" id="sumber" name="sumber">
+                <select class="select js-combobox-asal" id="sumber" name="sumber">
                     <option value="">Semua sumber</option>
                     @foreach ($sumber as $s)
                         <option value="{{ $s }}" @selected(request('sumber') === $s)>{{ ucwords(str_replace('-', ' ', $s)) }}</option>
@@ -74,7 +74,7 @@
 
             <div class="field field--md">
                 <label for="jenis">Jenis</label>
-                <select class="select" id="jenis" name="jenis">
+                <select class="select js-combobox-asal" id="jenis" name="jenis">
                     <option value="">Langsung & warisan</option>
                     <option value="langsung" @selected(request('jenis') === 'langsung')>Langsung</option>
                     <option value="warisan" @selected(request('jenis') === 'warisan')>Warisan</option>

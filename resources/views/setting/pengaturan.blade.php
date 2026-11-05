@@ -64,7 +64,7 @@
                         </div>
                         <div class="field">
                             <label for="tahun">Tahun Anggaran Aktif</label>
-                            <select class="select" id="tahun">
+                            <select class="select js-combobox-asal" id="tahun">
                                 @foreach ([2024, 2025, 2026, 2027] as $th)
                                     <option @selected($nilai['umum']['tahun_aktif'] === $th)>{{ $th }}</option>
                                 @endforeach
@@ -72,20 +72,20 @@
                         </div>
                         <div class="field">
                             <label for="tz">Zona Waktu</label>
-                            <select class="select" id="tz">
+                            <select class="select js-combobox-asal" id="tz">
                                 <option>{{ $nilai['umum']['zona_waktu'] }}</option>
                             </select>
                         </div>
                         <div class="field">
                             <label for="bahasa">Bahasa</label>
-                            <select class="select" id="bahasa">
+                            <select class="select js-combobox-asal" id="bahasa">
                                 <option>Indonesia</option>
                                 <option>English</option>
                             </select>
                         </div>
                         <div class="field">
                             <label for="format">Format Angka</label>
-                            <select class="select" id="format">
+                            <select class="select js-combobox-asal" id="format">
                                 <option>{{ $nilai['umum']['format_angka'] }}</option>
                             </select>
                         </div>
@@ -147,7 +147,7 @@
                             <div class="fw-600 text-sm">Ukuran halaman default</div>
                             <div class="text-xs text-mute">Jumlah baris per halaman pada tabel</div>
                         </div>
-                        <select class="select" style="width:120px">
+                        <select class="select js-combobox-asal" style="width:120px">
                             <option>25</option>
                             <option selected>50</option>
                             <option>100</option>

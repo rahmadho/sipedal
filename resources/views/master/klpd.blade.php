@@ -226,7 +226,7 @@
                 </div>
                 <div class="field" style="margin-top:14px">
                     <label for="tema-baru">Skema Warna</label>
-                    <select class="select" id="tema-baru">
+                    <select class="select js-combobox-asal" id="tema-baru">
                         @foreach (config('sipedal.tema') as $kunci => $t)
                             <option value="{{ $kunci }}">{{ $t['nama'] }}</option>
                         @endforeach

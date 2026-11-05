@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Mock\Mock;
+use App\Support\SatkerFilter;
 use Illuminate\Http\Request;
 
 class MasterController extends Controller
@@ -20,11 +21,18 @@ class MasterController extends Controller
         $perHalaman = 40;
         $offset = ($halaman - 1) * $perHalaman;
 
+        $baris = Mock::satker($perHalaman, $offset);
+
+        // Peran yang terikat satu satuan kerja hanya melihat satkernya.
+        if (SatkerFilter::berlakunya($request->session()->all())) {
+            $baris = SatkerFilter::terapkan($baris, (int) $request->session()->get('rup_stk_id'));
+        }
+
         return view('master.satker', [
-            'baris' => Mock::satker($perHalaman, $offset),
+            'baris' => $baris,
             'halaman' => $halaman,
             'perHalaman' => $perHalaman,
-            'total' => Mock::ACUAN['satker'],
+            'total' => count($baris) === $perHalaman ? Mock::ACUAN['satker'] : count($baris),
         ]);
     }
 

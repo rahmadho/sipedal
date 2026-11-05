@@ -83,7 +83,7 @@
 
             <div class="field field--md">
                 <label for="metode">Metode</label>
-                <select class="select" id="metode" name="metode">
+                <select class="select js-combobox-asal" id="metode" name="metode">
                     <option value="">Semua metode</option>
                     @foreach ($metode as $m)
                         <option value="{{ $m }}" @selected(request('metode') === $m)>{{ $m }}</option>
@@ -93,7 +93,7 @@
 
             <div class="field field--md">
                 <label for="jenis">Jenis</label>
-                <select class="select" id="jenis" name="jenis">
+                <select class="select js-combobox-asal" id="jenis" name="jenis">
                     <option value="">Semua jenis</option>
                     @foreach ($jenis as $j)
                         <option value="{{ $j }}" @selected(request('jenis') === $j)>{{ $j }}</option>
@@ -103,7 +103,7 @@
 
             <div class="field field--md">
                 <label for="status">Status</label>
-                <select class="select" id="status" name="status">
+                <select class="select js-combobox-asal" id="status" name="status">
                     <option value="">Semua status</option>
                     <option value="terealisasi" @selected(request('status') === 'terealisasi')>Terealisasi</option>
                     <option value="belum" @selected(request('status') === 'belum')>Belum terealisasi</option>

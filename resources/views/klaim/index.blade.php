@@ -74,7 +74,7 @@
             </div>
             <div class="field field--md">
                 <label for="status">Status</label>
-                <select class="select" id="status" name="status">
+                <select class="select js-combobox-asal" id="status" name="status">
                     <option value="">Semua status</option>
                     <option>Menunggu</option>
                     <option>Diverifikasi</option>

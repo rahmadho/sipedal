@@ -65,7 +65,7 @@
             </div>
             <div class="field field--md">
                 <label for="jenis">Jenis</label>
-                <select class="select" id="jenis" name="jenis">
+                <select class="select js-combobox-asal" id="jenis" name="jenis">
                     <option value="">Semua jenis</option>
                     <option>Dinas</option>
                     <option>Badan</option>

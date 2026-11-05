@@ -8,6 +8,7 @@
 
     <link rel="icon" href="{{ asset($tenant->logo()) }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ asset('assets/app.css') }}">
+    <script src="{{ asset('assets/combobox.js') }}" defer></script>
 
     {{-- Tema mengikuti KLPD pemilik domain. Lihat layouts/app.blade.php. --}}
     <style>
@@ -153,7 +154,7 @@
                 <input type="hidden" name="sandi" value="demo">
 
                 <label class="label-bagian" for="peran-cepat">Masuk cepat sebagai</label>
-                <select class="select" id="peran-cepat" name="peran" onchange="document.getElementById('form-peran').submit()">
+                <select class="select js-combobox-asal" id="peran-cepat" name="peran">
                     @foreach (config('sipedal.roles') as $kunci => $peran)
                         <option value="{{ $kunci }}">{{ $peran['label'] }} — {{ $peran['lingkup'] }}</option>
                     @endforeach
@@ -161,6 +162,25 @@
                 <p class="field__hint" style="margin-top:6px">
                     Pilihan ini hanya untuk meninjau tampilan tiap peran pada tahap UI/UX.
                 </p>
+
+                {{--
+                    Satuan kerja. Peran kepala_opd dan ppk wajib memilihnya karena
+                    data yang mereka lihat disaring per satuan kerja.
+                --}}
+                <div class="field" style="margin-top:14px" id="bidang-satker">
+                    <label for="rup_stk_id">Satuan kerja</label>
+                    <select class="select js-combobox-asal" id="rup_stk_id" name="rup_stk_id"
+                            data-placeholder="Pilih satuan kerja" data-cari="Cari satuan kerja"
+                            data-keterangan="1">
+                        <option value="">Pilih satuan kerja</option>
+                        @foreach ($satker as $s)
+                            <option value="{{ $s['nilai'] }}" data-keterangan="{{ $s['keterangan'] }}">{{ $s['label'] }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">
+                        Wajib untuk Kepala OPD dan PPK. Bagi peran lain boleh dikosongkan.
+                    </span>
+                </div>
             </form>
 
             <p class="text-xs text-mute" style="margin-top:22px;text-align:center">
@@ -229,6 +249,29 @@
             tombol.innerHTML = terbuka
                 ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
                 : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.9M6.2 6.3A16.7 16.7 0 0 0 2 12s3.6 7 10 7a9.8 9.8 0 0 0 4.2-.9"/><path d="M3 3l18 18"/></svg>';
+        });
+    })();
+
+    // ---------- Masuk cepat: kirim formulir setelah peran dipilih ----------
+    // Ditempel pada select, bukan pada atribut onchange, supaya tetap bekerja
+    // baik sebelum maupun sesudah combobox menaikkan kontrol ini.
+    (function () {
+        var pilih = document.getElementById('peran-cepat');
+        var form = document.getElementById('form-peran');
+        var bidang = document.getElementById('bidang-satker');
+        if (!pilih || !form) return;
+
+        function tandai() {
+            if (!bidang) return;
+            // Peran ini mengelola satu satuan kerja, jadi pilihannya ditonjolkan.
+            var wajib = ['kepala_opd', 'ppk'].indexOf(pilih.value) > -1;
+            bidang.classList.toggle('is-wajib', wajib);
+        }
+
+        tandai();
+        pilih.addEventListener('change', function () {
+            tandai();
+            form.submit();
         });
     })();
 </script>

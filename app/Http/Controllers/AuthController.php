@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Support\Mock\Mock;
+use App\Support\Mock\SatkerPilihan;
+use App\Support\SatkerFilter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -23,6 +25,7 @@ class AuthController extends Controller
 
         return view('auth.login', [
             'latar' => $tenant->latarLogin(),
+            'satker' => SatkerPilihan::semua(),
         ]);
     }
 
@@ -31,12 +34,20 @@ class AuthController extends Controller
         $data = $request->validate([
             'username' => ['required', 'string', 'min:3'],
             'peran' => ['nullable', 'string'],
+            'rup_stk_id' => ['nullable', 'integer'],
         ]);
 
         // Peran diambil dari pilihan cepat bila ada; jika tidak, Super Admin.
         $peran = $data['peran'] ?? 'super_admin';
         if (! array_key_exists($peran, config('sipedal.roles', []))) {
             $peran = 'operator';
+        }
+
+        // Peran yang mengelola satu satuan kerja wajib menunjuk satkernya.
+        if (SatkerFilter::wajib($peran) && empty($data['rup_stk_id'])) {
+            return Redirect::route('login')
+                ->withInput()
+                ->with('galat', SatkerFilter::pesan($peran));
         }
 
         $demo = Mock::USER_DEMO;
@@ -52,6 +63,7 @@ class AuthController extends Controller
             'nip' => $demo['nip'],
             'telepon' => $demo['telepon'],
             'terakhir_masuk' => $demo['terakhir_masuk'],
+            'rup_stk_id' => ! empty($data['rup_stk_id']) ? (int) $data['rup_stk_id'] : null,
         ]);
 
         return Redirect::route('dashboard');

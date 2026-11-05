@@ -94,7 +94,7 @@
             </div>
             <div class="field field--md">
                 <label for="status">Status</label>
-                <select class="select" id="status" name="status">
+                <select class="select js-combobox-asal" id="status" name="status">
                     <option value="">Semua status</option>
                     <option>Berlangsung</option>
                     <option>Selesai</option>
@@ -104,7 +104,7 @@
             </div>
             <div class="field field--md">
                 <label for="satker">Satuan Kerja</label>
-                <select class="select" id="satker" name="satker">
+                <select class="select js-combobox-asal" id="satker" name="satker">
                     <option value="">Semua satker</option>
                     @foreach (array_slice(\App\Support\Mock\Mock::SATKER, 0, 8) as $s)
                         <option>{{ $s }}</option>

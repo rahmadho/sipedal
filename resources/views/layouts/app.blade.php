@@ -10,6 +10,7 @@
 
     <link rel="icon" href="{{ asset($tenant->logo()) }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ asset('assets/app.css') }}">
+    <script src="{{ asset('assets/combobox.js') }}" defer></script>
 
     {{--
         INTI TEMA PER KLPD
@@ -181,6 +182,16 @@
 
         {{-- ---------- Isi halaman ---------- --}}
         <main class="page" id="konten">
+            @if (! empty($saringanSatker))
+                <div class="banner banner--info" style="margin-bottom:16px">
+                    <span class="banner__ikon"><x-ikon nama="filter" :ukuran="16" /></span>
+                    <div>
+                        Data disaring untuk satuan kerja
+                        <strong>{{ $namaSatker ?: ('kode '.$rupStkId) }}</strong>.
+                    </div>
+                </div>
+            @endif
+
             @yield('konten')
         </main>
     </div>

@@ -90,7 +90,7 @@
             </div>
             <div class="field field--sm">
                 <label for="status">Status</label>
-                <select class="select" id="status" name="status">
+                <select class="select js-combobox-asal" id="status" name="status">
                     <option value="">Semua</option>
                     <option>OK</option>
                     <option>KOSONG</option>
@@ -101,7 +101,7 @@
             </div>
             <div class="field field--sm">
                 <label for="grup">Grup</label>
-                <select class="select" id="grup" name="grup">
+                <select class="select js-combobox-asal" id="grup" name="grup">
                     <option value="">Semua</option>
                     <option>rup</option>
                     <option>tender</option>
