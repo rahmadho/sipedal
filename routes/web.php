@@ -53,6 +53,7 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
     Route::get('/setting/command', [SettingController::class, 'command'])->name('setting.command');
     Route::post('/setting/command/run', [SettingController::class, 'jalankanCommand'])->name('setting.command.run');
     Route::get('/setting/pengaturan', [SettingController::class, 'pengaturan'])->name('setting.pengaturan');
+    Route::post('/setting/scheduler', [SettingController::class, 'simpanScheduler'])->name('setting.scheduler.simpan');
     Route::get('/setting/profile', [SettingController::class, 'profile'])->name('setting.profile');
     Route::post('/setting/profile', [SettingController::class, 'simpanProfile'])->name('setting.profile.simpan');
 

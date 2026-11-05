@@ -25,6 +25,7 @@
                     $bagian = [
                         ['kunci' => 'umum', 'label' => 'Umum', 'ikon' => 'settings'],
                         ['kunci' => 'tampilan', 'label' => 'Tampilan', 'ikon' => 'palette'],
+                        ['kunci' => 'scheduler', 'label' => 'Jadwal Otomatis (Scheduler)', 'ikon' => 'clock'],
                         ['kunci' => 'data', 'label' => 'Data & Sinkronisasi', 'ikon' => 'database'],
                         ['kunci' => 'domain', 'label' => 'Domain & KLPD', 'ikon' => 'domain'],
                     ];
@@ -166,6 +167,88 @@
                     </div>
                 </div>
             </div>
+
+            {{-- ============ SCHEDULER (JADWAL OTOMATIS) ============ --}}
+            <form class="card" id="scheduler" method="POST" action="{{ route('setting.scheduler.simpan') }}">
+                @csrf
+                <div class="card__head">
+                    <div>
+                        <h2>Jadwal Tarik Data Otomatis (Scheduler)</h2>
+                        <p>Atur jadwal eksekusi background queue untuk masing-masing job tanpa intervensi manual</p>
+                    </div>
+                    <div class="head-aksi">
+                        <label class="switch" title="Aktifkan atau matikan penjadwal otomatis secara menyeluruh">
+                            <input type="checkbox" name="scheduler_enabled" value="1" @checked($scheduler['enabled'] ?? false)>
+                            <span class="switch__track"></span>
+                            <span class="fw-600 text-sm">Master Scheduler {{ ($scheduler['enabled'] ?? false) ? 'ON' : 'OFF' }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card__body">
+                    @if (session('status'))
+                        <div class="banner banner--sukses" style="margin-bottom:16px">
+                            <span class="banner__ikon"><x-ikon nama="check" :ukuran="16" /></span>
+                            <div>{{ session('status') }}</div>
+                        </div>
+                    @endif
+                    @if (session('galat'))
+                        <div class="banner banner--bahaya" style="margin-bottom:16px">
+                            <span class="banner__ikon"><x-ikon nama="alert" :ukuran="16" /></span>
+                            <div>{{ session('galat') }}</div>
+                        </div>
+                    @endif
+
+                    <div class="banner banner--info" style="margin-bottom:20px">
+                        <span class="banner__ikon"><x-ikon nama="clock" :ukuran="16" /></span>
+                        <div>
+                            Format jam menggunakan format 24 jam (<strong>HH:MM</strong> WIB). Pisahkan dengan tanda koma (<strong>,</strong>) jika ingin menjalankan lebih dari satu kali sehari.
+                            <br>Contoh: <code>04:00, 16:00</code> (jalan setiap pukul 04:00 pagi dan 16:00 sore WIB).
+                        </div>
+                    </div>
+
+                    <div class="col gap-4">
+                        @foreach ($scheduler['jobs'] as $kunciJob => $job)
+                            <div class="card" style="border:1px solid var(--border);background:var(--surface)">
+                                <div class="card__body" style="padding:14px">
+                                    <div class="row-between wrap gap-2" style="margin-bottom:10px">
+                                        <div>
+                                            <div class="fw-600 text-sm">{{ $job['label'] }}</div>
+                                            <div class="text-xs text-mute">{{ $job['desc'] }}</div>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox" name="jobs[{{ $kunciJob }}][enabled]" value="1" @checked($job['enabled'])>
+                                            <span class="switch__track"></span>
+                                            <span class="text-xs fw-500">{{ $job['enabled'] ? 'Aktif' : 'Nonaktif' }}</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="grid grid-2 gap-3" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
+                                        <div class="field">
+                                            <label for="time-{{ $kunciJob }}">Jadwal Jam Eksekusi (WIB)</label>
+                                            <input class="input mono" id="time-{{ $kunciJob }}" name="jobs[{{ $kunciJob }}][times]"
+                                                   value="{{ implode(', ', $job['times']) }}" placeholder="04:00, 16:00">
+                                            <span class="field__hint">Jam eksekusi per hari (HH:MM, pisahkan koma)</span>
+                                        </div>
+                                        <div class="field">
+                                            <label>Perintah Artisan Terkait</label>
+                                            <input class="input mono" value="php artisan {{ $job['command'] }}" disabled style="background:var(--gray-50)">
+                                            <span class="field__hint">Dijalankan otomatis oleh sistem</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="row" style="justify-content:flex-end;margin-top:20px">
+                        <button class="btn btn-primary" type="submit">
+                            <x-ikon nama="check" :ukuran="15" />
+                            Simpan Pengaturan Scheduler
+                        </button>
+                    </div>
+                </div>
+            </form>
 
             {{-- ============ DATA ============ --}}
             <div class="card" id="data">

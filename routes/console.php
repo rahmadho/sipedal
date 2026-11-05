@@ -23,21 +23,46 @@ Artisan::command('inspire', function () {
 })->purpose('Tampilkan kutipan penyemangat');
 
 /*
-| Penjadwalan (F8). Tarik berkala tanpa intervensi.
-| Aktifkan lewat `php artisan schedule:work` atau cron.
+| Penjadwalan Dinamis.
+| Dibaca langsung dari SchedulerConfig (dapat diubah dari menu Pengaturan).
+| Aktifkan worker di server lewat `php artisan schedule:work` atau crontab `schedule:run`.
 */
-Schedule::command('inaproc:pull --all --tahun='.now()->year.' --sync')
-    ->dailyAt('01:00')
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->description('Tarik harian seluruh KLPD terdaftar');
+$scheduler = \App\Support\SchedulerConfig::get();
 
-Schedule::job(new BuildRealisasiJob)
-    ->dailyAt('04:00')
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->description('Bangun ulang realisasi RUP setelah tarik harian');
+if ($scheduler['enabled'] ?? false) {
+    $jobs = $scheduler['jobs'] ?? [];
 
-Schedule::command('inaproc:validate-tokens')
-    ->weeklyOn(1, '06:00')
-    ->description('Periksa validitas token KLPD');
+    // 1. Tarik Data INAPROC
+    if (!empty($jobs['pull']['enabled']) && !empty($jobs['pull']['times'])) {
+        foreach ($jobs['pull']['times'] as $time) {
+            $tahun = now()->year;
+            Schedule::command("inaproc:pull --all --tahun={$tahun} --sync")
+                ->dailyAt($time)
+                ->withoutOverlapping()
+                ->onOneServer()
+                ->description("Tarik harian seluruh KLPD ({$time} WIB)");
+        }
+    }
+
+    // 2. Build Realisasi
+    if (!empty($jobs['build_realisasi']['enabled']) && !empty($jobs['build_realisasi']['times'])) {
+        foreach ($jobs['build_realisasi']['times'] as $time) {
+            Schedule::command('inaproc:build-realisasi')
+                ->dailyAt($time)
+                ->withoutOverlapping()
+                ->onOneServer()
+                ->description("Bangun ulang realisasi RUP ({$time} WIB)");
+        }
+    }
+
+    // 3. Validasi Token
+    if (!empty($jobs['validate_tokens']['enabled']) && !empty($jobs['validate_tokens']['times'])) {
+        foreach ($jobs['validate_tokens']['times'] as $time) {
+            Schedule::command('inaproc:validate-tokens')
+                ->dailyAt($time)
+                ->withoutOverlapping()
+                ->onOneServer()
+                ->description("Uji token seluruh KLPD ({$time} WIB)");
+        }
+    }
+}

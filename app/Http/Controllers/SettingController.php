@@ -137,7 +137,45 @@ class SettingController extends Controller
             'tema' => config('sipedal.tema', []),
             'tenant' => app(\App\Support\Tenant::class),
             'daftarTenant' => config('sipedal.tenants', []),
+            'scheduler' => \App\Support\SchedulerConfig::get(),
         ]);
+    }
+
+    public function simpanScheduler(Request $request)
+    {
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return redirect()->route('setting.pengaturan')->with('galat', 'Akses ditolak: peran Anda tidak dapat mengubah penjadwalan.');
+        }
+
+        $config = \App\Support\SchedulerConfig::get();
+        $config['enabled'] = $request->boolean('scheduler_enabled');
+
+        $jobsInput = $request->input('jobs', []);
+        foreach ($config['jobs'] as $key => &$job) {
+            $jobEnabled = !empty($jobsInput[$key]['enabled']);
+            $job['enabled'] = $jobEnabled;
+
+            $timesRaw = $jobsInput[$key]['times'] ?? '';
+            $timesList = array_filter(array_map('trim', explode(',', (string) $timesRaw)));
+
+            // Validasi format jam HH:MM
+            $validTimes = [];
+            foreach ($timesList as $t) {
+                if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $t)) {
+                    $validTimes[] = $t;
+                }
+            }
+
+            if (!empty($validTimes)) {
+                sort($validTimes);
+                $job['times'] = array_values(array_unique($validTimes));
+            }
+        }
+
+        \App\Support\SchedulerConfig::save($config);
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan jadwal otomatis berhasil disimpan.');
     }
 
     public function profile()
