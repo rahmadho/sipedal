@@ -110,7 +110,7 @@ return new class extends Migration
         $hasDefault = DB::selectOne(<<<'SQL'
             SELECT 1 AS ok
             FROM information_schema.columns
-            WHERE table_name = 'pull_log'
+            WHERE table_schema = 'public' AND table_name = 'pull_log'
               AND column_name = 'id'
               AND column_default IS NOT NULL
         SQL);
@@ -213,7 +213,7 @@ return new class extends Migration
         $exists = DB::selectOne(<<<'SQL'
             SELECT 1 AS ok
             FROM information_schema.table_constraints
-            WHERE table_name = ? AND constraint_type = 'PRIMARY KEY'
+            WHERE table_schema = 'public' AND table_name = ? AND constraint_type = 'PRIMARY KEY'
         SQL, [$table]);
 
         if ($exists) {

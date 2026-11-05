@@ -69,7 +69,7 @@ class SchemaManager
             $columns[] = $name.' '.$definition;
         }
 
-        DB::statement(sprintf('CREATE TABLE IF NOT EXISTS %s (%s)', $table, implode(', ', $columns)));
+        DB::statement(sprintf('CREATE TABLE IF NOT EXISTS inaproc.%s (%s)', $table, implode(', ', $columns)));
 
         $this->ensureIndex($table, $table.'_kode_klpd_tahun_index', '(_kode_klpd, _tahun)');
     }
@@ -87,7 +87,7 @@ class SchemaManager
             // untuk tabel yang sudah ada, cukup tambahkan kolom non-PK.
             $definition = $name === '_row_id' ? 'BIGSERIAL' : $definition;
 
-            DB::statement(sprintf('ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s', $table, $name, $definition));
+            DB::statement(sprintf('ALTER TABLE inaproc.%s ADD COLUMN IF NOT EXISTS %s %s', $table, $name, $definition));
         }
 
         $this->ensureIndex($table, $table.'_kode_klpd_tahun_index', '(_kode_klpd, _tahun)');
@@ -135,7 +135,7 @@ class SchemaManager
 
             if ($currentType === null) {
                 DB::statement(sprintf(
-                    'ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" %s',
+                    'ALTER TABLE inaproc.%s ADD COLUMN IF NOT EXISTS "%s" %s',
                     $table,
                     $name,
                     $this->postgresType($type),
@@ -149,7 +149,7 @@ class SchemaManager
 
             if ($this->rank($type) > $this->rank($current)) {
                 DB::statement(sprintf(
-                    'ALTER TABLE %s ALTER COLUMN "%s" TYPE %s USING "%s"::%s',
+                    'ALTER TABLE inaproc.%s ALTER COLUMN "%s" TYPE %s USING "%s"::%s',
                     $table,
                     $name,
                     $this->postgresType($type),
@@ -225,7 +225,7 @@ class SchemaManager
         $rows = DB::select(<<<'SQL'
             SELECT column_name, data_type
             FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = ?
+            WHERE table_schema IN ('public', 'inaproc') AND table_name = ?
         SQL, [$table]);
 
         $out = [];
@@ -245,7 +245,8 @@ class SchemaManager
      */
     public function diff(string $table, array $rows): array
     {
-        if (! Schema::hasTable($table)) {
+        $hasTable = Schema::hasTable($table) || Schema::hasTable("inaproc.{$table}");
+        if (! $hasTable) {
             return ['missing' => array_keys($this->detectColumns($rows)), 'extra' => []];
         }
 
@@ -289,7 +290,8 @@ class SchemaManager
 
     private function ensureIndex(string $table, string $name, string $columns): void
     {
-        DB::statement(sprintf('CREATE INDEX IF NOT EXISTS %s ON %s %s', $name, $table, $columns));
+        $target = str_contains($table, '.') ? $table : "inaproc.{$table}";
+        DB::statement(sprintf('CREATE INDEX IF NOT EXISTS %s ON %s %s', $name, $target, $columns));
     }
 
     private function assertSafeIdentifier(string $identifier): void

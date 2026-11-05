@@ -48,11 +48,15 @@ class ProsesCollector
      */
     public function codesFor(string $table, string $column): array
     {
-        if (! DB::getSchemaBuilder()->hasTable($table)) {
+        $fullTable = (str_starts_with($table, 'rec_') && !str_contains($table, '.'))
+            ? "inaproc.{$table}"
+            : $table;
+
+        if (! DB::getSchemaBuilder()->hasTable($fullTable)) {
             return [];
         }
 
-        if (! DB::getSchemaBuilder()->hasColumn($table, $column)) {
+        if (! DB::getSchemaBuilder()->hasColumn($fullTable, $column)) {
             return [];
         }
 

@@ -83,7 +83,11 @@ class ViewBuilder
         // tidak dapat dibangun. Ini bukan kegagalan proses realisasi.
         $paketTable = (string) config('inaproc.realisasi.paket_table', 'rec_rup_paket_penyedia');
 
-        if (! DB::getSchemaBuilder()->hasTable($paketTable)) {
+        $fullTable = (str_starts_with($paketTable, 'rec_') && !str_contains($paketTable, '.'))
+            ? "inaproc.{$paketTable}"
+            : $paketTable;
+
+        if (! DB::getSchemaBuilder()->hasTable($fullTable)) {
             return;
         }
 

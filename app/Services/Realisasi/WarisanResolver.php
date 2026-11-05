@@ -109,7 +109,11 @@ class WarisanResolver
         $table = (string) config('inaproc.realisasi.paket_table', 'rec_rup_paket_penyedia');
         $column = (string) config('inaproc.realisasi.paket_kode_column', 'kd_rup');
 
-        if (! DB::getSchemaBuilder()->hasTable($table)) {
+        $fullTable = (str_starts_with($table, 'rec_') && !str_contains($table, '.'))
+            ? "inaproc.{$table}"
+            : $table;
+
+        if (! DB::getSchemaBuilder()->hasTable($fullTable)) {
             return [];
         }
 
@@ -134,10 +138,13 @@ class WarisanResolver
     public function loadChains(): void
     {
         $table = (string) config('inaproc.realisasi.kaji_ulang_table', 'rec_rup_history_kaji_ulang');
+        $fullTable = (str_starts_with($table, 'rec_') && !str_contains($table, '.'))
+            ? "inaproc.{$table}"
+            : $table;
 
         $this->chains = [];
 
-        if (! DB::getSchemaBuilder()->hasTable($table)) {
+        if (! DB::getSchemaBuilder()->hasTable($fullTable)) {
             return;
         }
 
@@ -146,11 +153,11 @@ class WarisanResolver
             ->whereNotNull('kd_rup_lama')
             ->whereNotNull('kd_rup_baru');
 
-        if (DB::getSchemaBuilder()->hasColumn($table, 'jenis_revisi')) {
+        if (DB::getSchemaBuilder()->hasColumn($fullTable, 'jenis_revisi')) {
             $query->whereRaw("upper(coalesce(jenis_revisi, '')) = 'SATUKESATU'");
         }
 
-        if (DB::getSchemaBuilder()->hasColumn($table, 'jenis_paket')) {
+        if (DB::getSchemaBuilder()->hasColumn($fullTable, 'jenis_paket')) {
             $query->whereRaw("upper(coalesce(jenis_paket, '')) = 'PENYEDIA'");
         }
 

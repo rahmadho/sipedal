@@ -28,19 +28,19 @@ class SchemaManagerTest extends TestCase
         $this->schema()->ensureTable('rec_uji_baru', [['kd_rup' => 1, 'nama_paket' => 'x']]);
 
         foreach (['_row_id', '_kode_klpd', '_tahun', '_source', '_fetched_at'] as $column) {
-            $this->assertTrue(Schema::hasColumn('rec_uji_baru', $column), $column);
+            $this->assertTrue(Schema::hasColumn('inaproc.rec_uji_baru', $column), $column);
         }
 
-        $this->assertTrue(Schema::hasColumn('rec_uji_baru', 'kd_rup'));
+        $this->assertTrue(Schema::hasColumn('inaproc.rec_uji_baru', 'kd_rup'));
     }
 
     public function test_kolom_baru_muncul_di_tarikan_berikutnya(): void
     {
         $this->schema()->ensureTable('rec_uji_baru', [['kd_rup' => 1]]);
-        $this->assertFalse(Schema::hasColumn('rec_uji_baru', 'nama_paket'));
+        $this->assertFalse(Schema::hasColumn('inaproc.rec_uji_baru', 'nama_paket'));
 
         $this->schema()->ensureTable('rec_uji_baru', [['kd_rup' => 1, 'nama_paket' => 'x']]);
-        $this->assertTrue(Schema::hasColumn('rec_uji_baru', 'nama_paket'));
+        $this->assertTrue(Schema::hasColumn('inaproc.rec_uji_baru', 'nama_paket'));
     }
 
     public function test_tipe_hanya_meluas(): void

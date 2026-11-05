@@ -162,7 +162,11 @@ class DerivedPuller
             return [];
         }
 
-        if (! DB::getSchemaBuilder()->hasTable($table)) {
+        $fullTable = (str_starts_with($table, 'rec_') && !str_contains($table, '.'))
+            ? "inaproc.{$table}"
+            : $table;
+
+        if (! DB::getSchemaBuilder()->hasTable($fullTable)) {
             return [];
         }
 

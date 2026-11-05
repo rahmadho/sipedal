@@ -33,7 +33,7 @@ class SettingController extends Controller
             ->get();
 
         $baris = $logs->map(function ($l) {
-            $waktu = $l->created_at ? $l->created_at->format('d/m/Y H:i:s') : ($l->waktu ?? '—');
+            $waktu = $l->created_at ? $l->created_at->format('d/m/Y H:i:s') : '—';
             return [
                 'waktu' => $waktu,
                 'endpoint' => $l->endpoint,
@@ -53,8 +53,7 @@ class SettingController extends Controller
         $statGagal = \App\Models\PullLog::whereIn('status', ['GAGAL', 'FORBIDDEN'])->count();
         $statKosong = \App\Models\PullLog::where('status', 'KOSONG')->count();
         $statAvgDurasi = (int) round(\App\Models\PullLog::avg('durasi_ms') ?? 0);
-        $terakhir = \App\Models\PullLog::orderByDesc('id')->value('waktu')
-            ?: (\App\Models\PullLog::orderByDesc('id')->value('created_at')?->format('d/m/Y H:i') ?? '—');
+        $terakhir = \App\Models\PullLog::orderByDesc('id')->value('created_at')?->format('d/m/Y H:i') ?? '—';
 
         return view('setting.log', [
             'baris' => $baris,

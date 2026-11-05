@@ -192,6 +192,6 @@ class DerivedPullerTest extends TestCase
         $this->fakeOk([['nama' => 'kedua']]);
         $this->pullDerived(true);
 
-        $this->assertDatabaseCount('rec_ekatalog_penyedia_detail', 2);
+        $this->assertDatabaseCount('inaproc.rec_ekatalog_penyedia_detail', 2);
     }
 }
