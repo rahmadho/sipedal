@@ -11,13 +11,61 @@ class SettingController extends Controller
     {
         $halaman = max(1, (int) $request->query('halaman', 1));
         $perHalaman = 20;
-        $offset = ($halaman - 1) * $perHalaman;
+
+        $query = \App\Models\PullLog::query();
+
+        if ($cari = $request->query('cari')) {
+            $query->where('endpoint', 'like', "%{$cari}%");
+        }
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($grup = $request->query('grup')) {
+            $query->where('grup', $grup);
+        }
+
+        $total = $query->count();
+        $logs = $query->orderByDesc('id')
+            ->offset(($halaman - 1) * $perHalaman)
+            ->limit($perHalaman)
+            ->get();
+
+        $baris = $logs->map(function ($l) {
+            $waktu = $l->created_at ? $l->created_at->format('d/m/Y H:i:s') : ($l->waktu ?? '—');
+            return [
+                'waktu' => $waktu,
+                'endpoint' => $l->endpoint,
+                'grup' => $l->grup ?: '—',
+                'api' => $l->api ?: 'v1',
+                'klpd' => $l->kode_klpd,
+                'status' => $l->status,
+                'rows' => (int) $l->rows,
+                'pages' => (int) $l->pages,
+                'durasi_ms' => (int) $l->durasi_ms,
+                'pesan' => $l->pesan ?: '—',
+            ];
+        })->all();
+
+        // Hitung ringkasan statistik dari seluruh data tabel pull_log
+        $statOk = \App\Models\PullLog::where('status', 'OK')->count();
+        $statGagal = \App\Models\PullLog::whereIn('status', ['GAGAL', 'FORBIDDEN'])->count();
+        $statKosong = \App\Models\PullLog::where('status', 'KOSONG')->count();
+        $statAvgDurasi = (int) round(\App\Models\PullLog::avg('durasi_ms') ?? 0);
+        $terakhir = \App\Models\PullLog::orderByDesc('id')->value('waktu')
+            ?: (\App\Models\PullLog::orderByDesc('id')->value('created_at')?->format('d/m/Y H:i') ?? '—');
 
         return view('setting.log', [
-            'baris' => Mock::logSinkronisasi($perHalaman, $offset),
+            'baris' => $baris,
             'halaman' => $halaman,
             'perHalaman' => $perHalaman,
-            'total' => 33,
+            'total' => $total,
+            'statOk' => $statOk,
+            'statGagal' => $statGagal,
+            'statKosong' => $statKosong,
+            'statAvgDurasi' => $statAvgDurasi,
+            'terakhir' => $terakhir,
         ]);
     }
 
@@ -26,6 +74,60 @@ class SettingController extends Controller
         return view('setting.command', [
             'daftar' => Mock::command(),
         ]);
+    }
+
+    public function jalankanCommand(Request $request)
+    {
+        $request->validate([
+            'command' => ['required', 'string'],
+        ]);
+
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return response()->json([
+                'ok' => false,
+                'pesan' => 'Akses ditolak: peran Anda tidak diizinkan menjalankan perintah.',
+            ], 403);
+        }
+
+        $inputCmd = trim($request->input('command'));
+        // Whitelist command yang aman dan diizinkan
+        $allowed = [
+            'inaproc:pull' => 'inaproc:pull',
+            'inaproc:probe' => 'inaproc:probe',
+            'inaproc:validate-tokens' => 'inaproc:validate-tokens',
+            'inaproc:build-realisasi' => 'inaproc:build-realisasi',
+            'inaproc:endpoints' => 'inaproc:endpoints',
+            'inaproc:schema-check' => 'inaproc:schema-check',
+        ];
+
+        // Pisahkan nama command dan argumen
+        $parts = explode(' ', $inputCmd, 2);
+        $baseCmd = $parts[0];
+
+        if (!isset($allowed[$baseCmd])) {
+            return response()->json([
+                'ok' => false,
+                'pesan' => "Perintah '{$baseCmd}' tidak dikenali atau dilarang.",
+            ], 422);
+        }
+
+        try {
+            $exitCode = \Illuminate\Support\Facades\Artisan::call($inputCmd);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+
+            return response()->json([
+                'ok' => $exitCode === 0,
+                'exit_code' => $exitCode,
+                'output' => $output,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'exit_code' => 1,
+                'output' => "Kesalahan saat menjalankan perintah: " . $e->getMessage(),
+            ]);
+        }
     }
 
     public function pengaturan()

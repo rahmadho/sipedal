@@ -49,7 +49,10 @@
                     @endif
 
                     <div class="cmd-kartu__foot">
-                        <button class="btn btn-primary btn-sm" type="button" data-jalankan="{{ $c['nama'] }}">
+                        @php
+                            $fullCommand = trim($c['nama'] . ' ' . $c['args']);
+                        @endphp
+                        <button class="btn btn-primary btn-sm" type="button" data-jalankan="{{ $fullCommand }}">
                             <x-ikon nama="play" :ukuran="13" />
                             Jalankan
                         </button>
@@ -95,8 +98,8 @@
                 <div class="banner banner--peringatan" style="margin:0">
                     <span class="banner__ikon"><x-ikon nama="alert" :ukuran="16" /></span>
                     <div>
-                        Perintah ini akan menghubungi API INAPROC dan memakai kuota token.
-                        Tahap UI/UX: tidak ada permintaan sungguhan yang dikirim.
+                        Perintah ini akan dieksekusi secara nyata di backend server.
+                        Pastikan argumen dan tujuan sudah sesuai.
                     </div>
                 </div>
             </div>
@@ -133,28 +136,61 @@
             return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
         }
 
-        // Simulasi keluaran perintah — tidak ada permintaan jaringan.
+        // Eksekusi nyata perintah artisan melalui backend
         function jalankan(nama) {
-            status.textContent = 'Menjalankan: ' + nama;
+            status.textContent = 'Menjalankan: ' + nama + '…';
             tulis('<span class="waktu">[' + jam() + ']</span> <span class="info">$ php artisan ' + nama + '</span>');
+            tulis('<span class="dim">Mengirim perintah ke server…</span>');
 
-            var langkah = [
-                '<span class="dim">Memuat konfigurasi endpoint…</span>',
-                '<span class="dim">Memeriksa token KLPD D462…</span> <span class="ok">valid</span>',
-                '<span class="dim">Menarik rup-paket-penyedia</span> <span class="ok">16.024 baris</span> <span class="dim">(17 halaman)</span>',
-                '<span class="dim">Menarik tender-pengumuman</span> <span class="ok">94 baris</span>',
-                '<span class="dim">Menarik ekatalog-paket-e-purchasing</span> <span class="ok">5.770 baris</span>',
-                '<span class="dim">Menarik master-program</span> <span class="ok">194.477 baris</span>',
-                '<span class="dim">Menulis ke basis data…</span> <span class="ok">selesai</span>',
-                '<span class="ok">Selesai dalam 42,8 s · 61 endpoint · 0 gagal</span>',
-            ];
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-            langkah.forEach(function (l, i) {
-                setTimeout(function () {
-                    tulis('<span class="waktu">[' + jam() + ']</span> ' + l);
-                    if (i === langkah.length - 1) status.textContent = 'Selesai: ' + nama;
-                }, 420 * (i + 1));
+            fetch('{{ route("setting.command.run") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ command: nama })
+            })
+            .then(function(res) {
+                return res.json().then(function(data) {
+                    return { status: res.status, data: data };
+                });
+            })
+            .then(function(resp) {
+                var data = resp.data;
+                if (!resp.status || resp.status >= 400 || !data.ok) {
+                    var pesan = data.pesan || data.output || 'Gagal menjalankan perintah.';
+                    tulis('<span class="waktu">[' + jam() + ']</span> <span class="err">GAGAL (Kode ' + (data.exit_code || resp.status) + '): ' + pesan + '</span>');
+                    status.textContent = 'Gagal: ' + nama;
+                    return;
+                }
+
+                // Tampilkan output baris per baris
+                var lines = (data.output || '').split('\n');
+                lines.forEach(function(line) {
+                    if (line.trim().length > 0) {
+                        tulis('<span class="dim">&gt; ' + escapeHtml(line) + '</span>');
+                    }
+                });
+
+                tulis('<span class="waktu">[' + jam() + ']</span> <span class="ok">Selesai dieksekusi dengan kode keluar 0</span>');
+                status.textContent = 'Selesai: ' + nama;
+            })
+            .catch(function(err) {
+                tulis('<span class="waktu">[' + jam() + ']</span> <span class="err">Kesalahan jaringan: ' + err.message + '</span>');
+                status.textContent = 'Galat: ' + nama;
             });
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         document.querySelectorAll('[data-jalankan]').forEach(function (t) {

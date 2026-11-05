@@ -17,19 +17,12 @@
                 <x-ikon nama="download" :ukuran="15" />
                 Unduh Log
             </button>
-            <button class="btn btn-primary btn-sm" type="button">
+            <button class="btn btn-primary btn-sm" type="button" onclick="location.reload()">
                 <x-ikon nama="refresh" :ukuran="15" />
                 Muat Ulang
             </button>
         </div>
     </div>
-
-    @php
-        $jmlOk = collect($baris)->where('status', 'OK')->count();
-        $jmlGagal = collect($baris)->whereIn('status', ['GAGAL', 'FORBIDDEN'])->count();
-        $jmlKosong = collect($baris)->where('status', 'KOSONG')->count();
-        $rataDurasi = (int) round(collect($baris)->avg('durasi_ms') ?? 0);
-    @endphp
 
     <div class="grid grid-4" style="margin-bottom:16px">
         <div class="kpi">
@@ -37,15 +30,15 @@
                 <span class="kpi__label">Berhasil</span>
                 <span class="kpi__ikon" style="background:var(--green-50);color:var(--green-700)"><x-ikon nama="check-circle" :ukuran="17" /></span>
             </div>
-            <div class="kpi__nilai">{{ angka($jmlOk) }}</div>
-            <div class="kpi__sub">Dari {{ count($baris) }} catatan</div>
+            <div class="kpi__nilai">{{ angka($statOk ?? 0) }}</div>
+            <div class="kpi__sub">Total catatan berhasil</div>
         </div>
         <div class="kpi">
             <div class="kpi__top">
                 <span class="kpi__label">Gagal / Ditolak</span>
                 <span class="kpi__ikon" style="background:var(--red-50);color:var(--red-700)"><x-ikon nama="alert" :ukuran="17" /></span>
             </div>
-            <div class="kpi__nilai">{{ angka($jmlGagal) }}</div>
+            <div class="kpi__nilai">{{ angka($statGagal ?? 0) }}</div>
             <div class="kpi__sub">Perlu penanganan</div>
         </div>
         <div class="kpi">
@@ -53,15 +46,15 @@
                 <span class="kpi__label">Kosong</span>
                 <span class="kpi__ikon"><x-ikon nama="inbox" :ukuran="17" /></span>
             </div>
-            <div class="kpi__nilai">{{ angka($jmlKosong) }}</div>
-            <div class="kpi__sub">Tidak ada data tahun ini</div>
+            <div class="kpi__nilai">{{ angka($statKosong ?? 0) }}</div>
+            <div class="kpi__sub">Tidak ada data</div>
         </div>
         <div class="kpi">
             <div class="kpi__top">
                 <span class="kpi__label">Rata-rata Durasi</span>
                 <span class="kpi__ikon"><x-ikon nama="clock" :ukuran="17" /></span>
             </div>
-            <div class="kpi__nilai">{{ durasi($rataDurasi) }}</div>
+            <div class="kpi__nilai">{{ durasi($statAvgDurasi ?? 0) }}</div>
             <div class="kpi__sub">Per permintaan</div>
         </div>
     </div>
@@ -75,7 +68,7 @@
             <div class="head-aksi">
                 <span class="badge badge--hijau">
                     <span class="badge__dot"></span>
-                    Terakhir: 23/10/2026 18:56
+                    Terakhir: {{ $terakhir ?? '—' }}
                 </span>
             </div>
         </div>
