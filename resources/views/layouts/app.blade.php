@@ -152,12 +152,7 @@
                 <div class="periode-picker" style="position:relative">
                     <button class="topbar__periode-btn" type="button" id="periode-btn" aria-haspopup="true" aria-expanded="false" title="Ubah konteks data (KLPD, tahun, bulan)">
                         <x-ikon nama="calendar" :ukuran="15" />
-                        <span class="periode-label">
-                            @if (!empty($bisaLintasKlpd))
-                                <span class="badge badge--brand" style="padding:2px 5px;font-size:10px;margin-right:4px">{{ $sesiKdKlpd }}</span>
-                            @endif
-                            {{ $labelPeriode }}
-                        </span>
+                        <span class="periode-label">{{ $labelPeriode }}</span>
                         <x-ikon nama="chevron-down" :ukuran="12" />
                     </button>
 
@@ -209,9 +204,9 @@
                     </div>
                 </div>
 
-                <div class="topbar__tenant" title="KLPD aktif">
+                <div class="topbar__tenant" title="{{ $namaKlpd }} (KLPD aktif)">
                     <img src="{{ asset($tenant->logoPemda()) }}" alt="">
-                    <span>{{ $tenant->kode() }}</span>
+                    <span>{{ $sesiKdKlpd }}</span>
                 </div>
 
                 <button class="icon-btn" type="button" aria-label="Notifikasi">
