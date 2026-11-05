@@ -342,14 +342,17 @@ table { border-collapse: collapse; width: 100%; }
 }
 .input-wrap .input-aksi:hover { background: var(--gray-100); color: var(--text-soft); }
 
-.input, .select, .textarea {
+.input, .select, .textarea, .combobox__kendali {
     width: 100%;
+    height: 42px;
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
     color: var(--text);
     font-size: 13.5px;
+    font-family: inherit;
+    line-height: 1.4;
     transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
 }
 .input-wrap .input { padding-left: 38px; }
@@ -1028,7 +1031,7 @@ table { border-collapse: collapse; width: 100%; }
     display: block;
     min-height: 15px;
 }
-.toolbar .input, .toolbar .select { height: 34px; padding-top: 6px; padding-bottom: 6px; font-size: 12.5px; }
+.toolbar .input, .toolbar .select, .toolbar .combobox__kendali { height: 34px; padding-top: 6px; padding-bottom: 6px; font-size: 12.5px; }
 /* Lebar kolom dirapatkan agar empat filter + tombol aksi muat dalam satu
    baris pada lebar layar 1280 px. Tanpa ini, tombol aksi turun sendiri. */
 .toolbar .field--cari { flex: 1 1 200px; min-width: 150px; max-width: 280px; }
@@ -1580,17 +1583,7 @@ table { border-collapse: collapse; width: 100%; }
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 13.5px;
-    font-family: inherit;
-    line-height: 1.2;
     text-align: left;
-    transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
 }
 .combobox__kendali:hover { border-color: var(--gray-300); }
 .combobox__kendali:focus-visible {
