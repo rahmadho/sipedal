@@ -31,7 +31,7 @@
         <env name="DB_CONNECTION" value="pgsql"/>
         <env name="DB_HOST" value="103.22.250.210"/>
         <env name="DB_PORT" value="54320"/>
-        <env name="DB_DATABASE" value="sipedal_new"/>
+        <env name="DB_DATABASE" value="inaproc_test"/>
         <env name="DB_USERNAME" value="sipedal"/>
         <env name="DB_PASSWORD" value="@Password2026"/>
         <env name="DB_SEARCH_PATH" value="public,inaproc"/>

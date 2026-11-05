@@ -148,6 +148,11 @@ class WarisanResolver
             return;
         }
 
+        if (! DB::getSchemaBuilder()->hasColumn($fullTable, 'kd_rup_lama') ||
+            ! DB::getSchemaBuilder()->hasColumn($fullTable, 'kd_rup_baru')) {
+            return;
+        }
+
         $query = DB::table($table)
             ->select(['kd_rup_lama', 'kd_rup_baru'])
             ->whereNotNull('kd_rup_lama')
