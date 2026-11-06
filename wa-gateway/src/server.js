@@ -31,6 +31,10 @@
 // byte-for-byte identically (same providers calls, same status codes, same
 // response bodies) — both delegate to the handlers below.
 // =============================================================================
+// Force IPv4 first: prevent broken IPv6 egress on this host
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import http from "node:http";
 
 import { log } from "./lib/shared.js";

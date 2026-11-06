@@ -23,6 +23,73 @@
         </div>
     </div>
 
+    {{-- ================= KARTU TARIK SATU ENDPOINT PILIHAN ================= --}}
+    <div class="card" style="margin-bottom:20px;border:1px solid var(--border);box-shadow:var(--shadow-sm)">
+        <div class="card__head" style="border-bottom:1px solid var(--border);padding:14px 18px">
+            <div>
+                <h2 style="font-size:15px;display:flex;align-items:center;gap:8px">
+                    <span style="color:var(--brand)"><x-ikon nama="refresh" :ukuran="18" /></span>
+                    Tarik Satu Endpoint Spesifik
+                </h2>
+                <p style="font-size:12px;color:var(--mute);margin:0">
+                    Pilih salah satu endpoint dari daftar untuk melakukan sinkronisasi parsial tanpa menarik seluruh data KLPD.
+                </p>
+            </div>
+        </div>
+        <div class="card__body" style="padding:18px">
+            <div class="grid grid-3 gap-3" style="align-items:flex-end">
+                <div class="field" style="margin:0">
+                    <label for="pilih-endpoint" style="font-weight:600;font-size:13px;margin-bottom:6px">Pilih Endpoint</label>
+                    <select class="select js-combobox-asal" id="pilih-endpoint">
+                        <option value="">-- Pilih Endpoint INAPROC --</option>
+                        @php
+                            $grupTerakhir = null;
+                        @endphp
+                        @foreach ($endpoints as $ep)
+                            @if ($grupTerakhir !== $ep->grup)
+                                @if ($grupTerakhir !== null) </optgroup> @endif
+                                <optgroup label="Grup: {{ strtoupper($ep->grup) }} (API {{ strtoupper($ep->api) }})">
+                                @php $grupTerakhir = $ep->grup; @endphp
+                            @endif
+                            <option value="{{ $ep->name }}"
+                                    data-api="{{ $ep->api }}"
+                                    data-grup="{{ $ep->grup }}"
+                                    data-scope="{{ $ep->scope }}"
+                                    data-active="{{ $ep->active ? '1' : '0' }}">
+                                {{ $ep->name }} &nbsp; [{{ $ep->scope }}] {{ !$ep->active ? '— (Nonaktif)' : '' }}
+                            </option>
+                        @endforeach
+                        @if ($grupTerakhir !== null) </optgroup> @endif
+                    </select>
+                </div>
+
+                <div class="field" style="margin:0">
+                    <label for="param-klpd" style="font-weight:600;font-size:13px;margin-bottom:6px">Target KLPD & Tahun</label>
+                    <div class="row gap-2">
+                        <input type="text" class="input mono" id="param-klpd" value="{{ $kdKlpd }}" placeholder="KLPD" style="max-width:110px">
+                        <input type="number" class="input mono" id="param-tahun" value="{{ $tahun }}" placeholder="Tahun" style="max-width:90px">
+                    </div>
+                </div>
+
+                <div class="field" style="margin:0">
+                    <div class="row gap-2">
+                        <button class="btn btn-primary grow" type="button" id="btn-jalankan-endpoint">
+                            <x-ikon nama="play" :ukuran="14" />
+                            Tarik Endpoint Ini
+                        </button>
+                        <button class="btn btn-ghost" type="button" id="btn-salin-endpoint" title="Salin Perintah Artisan">
+                            <x-ikon nama="file" :ukuran="14" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="endpoint-info" class="text-xs text-mute mono" style="margin-top:12px;padding:8px 12px;background:var(--gray-50);border-radius:6px;border:1px solid var(--border);display:none">
+                Perintah yang akan dieksekusi: <span id="endpoint-cmd-text" style="color:var(--brand);font-weight:600"></span>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-2">
         @foreach ($daftar as $c)
             @php
@@ -192,6 +259,73 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
         }
+
+        // Logika Dropdown Endpoint Tunggal
+        var selEndpoint = document.getElementById('pilih-endpoint');
+        var inputKlpd = document.getElementById('param-klpd');
+        var inputTahun = document.getElementById('param-tahun');
+        var btnRunEndpoint = document.getElementById('btn-jalankan-endpoint');
+        var btnCopyEndpoint = document.getElementById('btn-salin-endpoint');
+        var infoBox = document.getElementById('endpoint-info');
+        var cmdText = document.getElementById('endpoint-cmd-text');
+
+        function bangunCommandEndpoint() {
+            var ep = selEndpoint.value;
+            if (!ep) return null;
+
+            var opt = selEndpoint.selectedOptions ? selEndpoint.selectedOptions[0] : null;
+            var scope = opt ? opt.getAttribute('data-scope') : 'klpd';
+            var klpd = inputKlpd.value.trim() || 'D462';
+            var thn = inputTahun.value.trim() || '2026';
+
+            var cmd = 'inaproc:pull --endpoint=' + ep;
+            if (scope === 'klpd') {
+                cmd += ' --klpd=' + klpd + ' --tahun=' + thn;
+            } else if (scope === 'tahun') {
+                cmd += ' --tahun=' + thn;
+            } else if (scope === 'derived') {
+                cmd += ' --klpd=' + klpd + ' --tahun=' + thn + ' --refresh-derived';
+            }
+            cmd += ' --sync';
+            return cmd;
+        }
+
+        function updatePreviewCmd() {
+            var cmd = bangunCommandEndpoint();
+            if (cmd) {
+                cmdText.textContent = 'php artisan ' + cmd;
+                infoBox.style.display = 'block';
+            } else {
+                infoBox.style.display = 'none';
+            }
+        }
+
+        selEndpoint.addEventListener('change', updatePreviewCmd);
+        inputKlpd.addEventListener('input', updatePreviewCmd);
+        inputTahun.addEventListener('input', updatePreviewCmd);
+
+        btnRunEndpoint.addEventListener('click', function () {
+            var cmd = bangunCommandEndpoint();
+            if (!cmd) {
+                alert('Silakan pilih salah satu endpoint terlebih dahulu.');
+                return;
+            }
+            perintahTertunda = cmd;
+            ket.textContent = 'php artisan ' + perintahTertunda;
+            latar.hidden = false;
+        });
+
+        btnCopyEndpoint.addEventListener('click', function () {
+            var cmd = bangunCommandEndpoint();
+            if (!cmd) {
+                alert('Silakan pilih salah satu endpoint terlebih dahulu.');
+                return;
+            }
+            navigator.clipboard.writeText('php artisan ' + cmd);
+            var asli = btnCopyEndpoint.innerHTML;
+            btnCopyEndpoint.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>';
+            setTimeout(function () { btnCopyEndpoint.innerHTML = asli; }, 1400);
+        });
 
         document.querySelectorAll('[data-jalankan]').forEach(function (t) {
             t.addEventListener('click', function () {

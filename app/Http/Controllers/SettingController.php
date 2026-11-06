@@ -70,8 +70,18 @@ class SettingController extends Controller
 
     public function command()
     {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $tahun = session('tahun', (int) date('Y'));
+        $endpoints = \App\Models\Endpoint::query()
+            ->orderBy('grup')
+            ->orderBy('name')
+            ->get();
+
         return view('setting.command', [
             'daftar' => Mock::command(),
+            'endpoints' => $endpoints,
+            'kdKlpd' => $kdKlpd,
+            'tahun' => $tahun,
         ]);
     }
 

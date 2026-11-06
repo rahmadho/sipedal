@@ -210,7 +210,7 @@ export function createBaileysProvider(config = {}) {
         auth: state,
         printQRInTerminal: false,
         browser: Browsers.macOS("Chrome"),
-        logger: pino({ level: config.logLevel || "warn" }),
+        logger: pino({ level: "info" }),
         markOnlineOnConnect: false,
         syncFullHistory: false,
         connectTimeoutMs: 60000,
