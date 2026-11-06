@@ -34,7 +34,7 @@ return [
     | tabel klpd_credentials. Pilih salah satu — jangan keduanya.
     |
     */
-    'credentials_driver' => env('INAPROC_CREDENTIALS_DRIVER', 'file'),
+    'credentials_driver' => env('INAPROC_CREDENTIALS_DRIVER', 'database'),
     'klpd_file' => env('INAPROC_KLPD_FILE', storage_path('app/klpd_tokens.json')),
 
     /*

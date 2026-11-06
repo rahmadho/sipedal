@@ -166,6 +166,21 @@ class SettingController extends Controller
             ],
         ];
 
+        // Daftar token untuk 20 KLPD
+        $credentials = \App\Models\KlpdCredential::all()->keyBy('kode');
+        $daftarKlpdToken = [];
+        foreach (\App\Support\KlpdList::semua() as $klpd) {
+            $kode = $klpd['kode'];
+            $cred = $credentials->get($kode);
+            $hasToken = $cred && !empty($cred->token);
+            $daftarKlpdToken[] = [
+                'kode' => $kode,
+                'nama' => $klpd['nama'],
+                'has_token' => $hasToken,
+                'masked' => $cred ? $cred->masked_token : '—',
+            ];
+        }
+
         return view('setting.pengaturan', [
             'nilai' => $nilai,
             'tema' => config('sipedal.tema', []),
@@ -174,6 +189,7 @@ class SettingController extends Controller
             'scheduler' => \App\Support\SchedulerConfig::get(),
             'kdKlpdAktif' => $kdKlpd,
             'namaKlpdAktif' => $namaKlpd,
+            'daftarKlpdToken' => $daftarKlpdToken,
         ]);
     }
 
@@ -260,6 +276,43 @@ class SettingController extends Controller
         \App\Models\AppSetting::set('batas_ekspor', $data['batas_ekspor'], $kdKlpd);
 
         return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan data & sinkronisasi berhasil disimpan.');
+    }
+
+    public function simpanToken(Request $request)
+    {
+        $peran = session('peran');
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+
+        $tokensInput = $request->input('tokens', []);
+        $updatedCount = 0;
+
+        foreach ($tokensInput as $kode => $tokenVal) {
+            $tokenVal = trim((string) $tokenVal);
+            if ($tokenVal === '') {
+                continue;
+            }
+
+            // Otorisasi: super_admin boleh ubah semua, role lain hanya boleh ubah KLPD-nya sendiri
+            if ($peran !== 'super_admin' && strtoupper($kode) !== strtoupper($kdKlpd)) {
+                continue;
+            }
+
+            $label = \App\Support\KlpdList::nama($kode) ?? "KLPD {$kode}";
+
+            $cred = \App\Models\KlpdCredential::firstOrNew(['kode' => strtoupper($kode)]);
+            $cred->label = $label;
+            $cred->token = $tokenVal; // setter otomatis mengenkripsi string via Crypt
+            $cred->is_active = true;
+            $cred->save();
+
+            $updatedCount++;
+        }
+
+        if ($updatedCount > 0) {
+            return redirect()->route('setting.pengaturan')->with('status', "Berhasil memperbarui token untuk {$updatedCount} KLPD.");
+        }
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Tidak ada token yang diperbarui (isian kosong).');
     }
 
     public function simpanScheduler(Request $request)

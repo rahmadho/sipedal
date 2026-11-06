@@ -26,6 +26,7 @@
                         ['kunci' => 'umum', 'label' => 'Umum', 'ikon' => 'settings'],
                         ['kunci' => 'tampilan', 'label' => 'Tampilan', 'ikon' => 'palette'],
                         ['kunci' => 'scheduler', 'label' => 'Jadwal Otomatis (Scheduler)', 'ikon' => 'clock'],
+                        ['kunci' => 'token', 'label' => 'Token API KLPD', 'ikon' => 'key'],
                         ['kunci' => 'data', 'label' => 'Data & Sinkronisasi', 'ikon' => 'database'],
                         ['kunci' => 'domain', 'label' => 'Domain & KLPD', 'ikon' => 'domain'],
                     ];
@@ -326,6 +327,97 @@
                             Simpan Pengaturan Scheduler
                         </button>
                     </div>
+                </div>
+            </form>
+
+            {{-- ============ TOKEN API KLPD ============ --}}
+            <form class="card" id="token" method="POST" action="{{ route('setting.pengaturan.token') }}">
+                @csrf
+                <div class="card__head">
+                    <div>
+                        <h2>Token API INAPROC per KLPD</h2>
+                        <p>Kelola token Bearer untuk setiap wilayah/KLPD agar sinkronisasi data dapat berjalan</p>
+                    </div>
+                    <div class="head-aksi">
+                        @if (session('peran') === 'super_admin')
+                            <span class="badge badge--brand">Akses Super Admin</span>
+                        @else
+                            <span class="badge badge--netral">Konteks {{ $kdKlpdAktif }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card__body card__body--flush">
+                    <div class="banner banner--info" style="margin:16px 20px 0">
+                        <span class="banner__ikon"><x-ikon nama="key" :ukuran="16" /></span>
+                        <div>
+                            Token disimpan terenkripsi secara aman di tabel <code>public.klpd_credentials</code>.
+                            Kosongkan isian jika tidak ingin mengubah token yang sudah tersimpan.
+                        </div>
+                    </div>
+
+                    <div class="tabel-wrap">
+                        <table class="tabel">
+                            <thead>
+                                <tr>
+                                    <th style="width:70px">Kode</th>
+                                    <th>Wilayah / KLPD</th>
+                                    <th>Status Saat Ini</th>
+                                    <th style="min-width:280px">Perbarui Token Bearer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($daftarKlpdToken as $klpdTok)
+                                    @php
+                                        $bisaEdit = (session('peran') === 'super_admin') || ($klpdTok['kode'] === $kdKlpdAktif);
+                                    @endphp
+                                    <tr style="{{ $klpdTok['kode'] === $kdKlpdAktif ? 'background:var(--brand-50)' : '' }}">
+                                        <td class="sel-kode fw-600">{{ $klpdTok['kode'] }}</td>
+                                        <td>
+                                            <div class="fw-600 text-sm">{{ $klpdTok['nama'] }}</div>
+                                            @if ($klpdTok['kode'] === $kdKlpdAktif)
+                                                <span class="text-xs text-brand" style="color:var(--brand-700)">• Sedang aktif di sesi</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($klpdTok['has_token'])
+                                                <span class="badge badge--hijau" title="Token terdaftar">
+                                                    <span class="badge__dot"></span> Tersimpan
+                                                </span>
+                                                <div class="mono text-xs text-mute" style="margin-top:4px">
+                                                    {{ $klpdTok['masked'] }}
+                                                </div>
+                                            @else
+                                                <span class="badge badge--netral">
+                                                    Belum Ada Token
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($bisaEdit)
+                                                <div class="input-wrap">
+                                                    <input type="password" class="input input--sm mono"
+                                                           name="tokens[{{ $klpdTok['kode'] }}]"
+                                                           placeholder="Ketik token baru untuk ubah…"
+                                                           autocomplete="new-password"
+                                                           style="font-size:12px;height:34px">
+                                                </div>
+                                            @else
+                                                <span class="text-xs text-mute">Hanya dapat diubah oleh Super Admin</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card__foot" style="justify-content:flex-end">
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <x-ikon nama="check" :ukuran="14" />
+                        Simpan Perubahan Token
+                    </button>
                 </div>
             </form>
 

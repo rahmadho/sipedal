@@ -26,9 +26,18 @@ class KlpdCredentials
      */
     public function all(): array
     {
-        $driver = (string) config('inaproc.credentials_driver', 'file');
+        $driver = (string) config('inaproc.credentials_driver', 'database');
 
-        return $driver === 'database' ? $this->fromDatabase() : $this->fromFile();
+        if ($driver === 'file') {
+            return $this->fromFile();
+        }
+
+        $fromDb = $this->fromDatabase();
+        if (!empty($fromDb)) {
+            return $fromDb;
+        }
+
+        return $this->fromFile();
     }
 
     /**
