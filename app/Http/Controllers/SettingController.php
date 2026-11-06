@@ -131,13 +131,117 @@ class SettingController extends Controller
 
     public function pengaturan()
     {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $namaKlpd = \App\Support\KlpdList::nama($kdKlpd) ?? app(\App\Support\Tenant::class)->nama();
+
+        // Nilai acuan gabungan dari database (AppSetting) dan fallback Mock
+        $mock = Mock::pengaturan();
+        $nilai = [
+            'umum' => [
+                'nama_aplikasi' => \App\Models\AppSetting::get('nama_aplikasi', $kdKlpd, $mock['umum']['nama_aplikasi']),
+                'nama_instansi' => \App\Models\AppSetting::get('nama_instansi', $kdKlpd, $namaKlpd),
+                'tahun_aktif' => (int) session('tahun', (int) \App\Models\AppSetting::get('tahun_aktif', $kdKlpd, now()->year)),
+                'zona_waktu' => \App\Models\AppSetting::get('zona_waktu', $kdKlpd, $mock['umum']['zona_waktu']),
+                'bahasa' => session('bahasa', \App\Models\AppSetting::get('bahasa', $kdKlpd, 'id')),
+                'format_angka' => \App\Models\AppSetting::get('format_angka', $kdKlpd, $mock['umum']['format_angka']),
+            ],
+            'tampilan' => [
+                'tema_aktif' => \App\Models\AppSetting::get('tema_aktif', $kdKlpd, 'biru'),
+                'ukuran_halaman' => (int) \App\Models\AppSetting::get('ukuran_halaman', $kdKlpd, 50),
+                'tema_gelap' => false,
+                'animasi_login' => (bool) \App\Models\AppSetting::get('animasi_login', $kdKlpd, true),
+                'interval_transisi' => (int) \App\Models\AppSetting::get('interval_transisi', $kdKlpd, 6),
+            ],
+            'data' => [
+                'ambang_basi_jam' => (int) \App\Models\AppSetting::get('ambang_basi_jam', $kdKlpd, 48),
+                'batas_ekspor' => (int) \App\Models\AppSetting::get('batas_ekspor', $kdKlpd, 50000),
+                'jadwal_refresh' => \App\Models\AppSetting::get('jadwal_refresh', $kdKlpd, '04:00, 16:00 WIB'),
+                'refresh_otomatis' => (bool) \App\Models\AppSetting::get('refresh_otomatis', $kdKlpd, true),
+            ],
+        ];
+
         return view('setting.pengaturan', [
-            'nilai' => Mock::pengaturan(),
+            'nilai' => $nilai,
             'tema' => config('sipedal.tema', []),
             'tenant' => app(\App\Support\Tenant::class),
             'daftarTenant' => config('sipedal.tenants', []),
             'scheduler' => \App\Support\SchedulerConfig::get(),
+            'kdKlpdAktif' => $kdKlpd,
+            'namaKlpdAktif' => $namaKlpd,
         ]);
+    }
+
+    public function simpanUmum(Request $request)
+    {
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return redirect()->route('setting.pengaturan')->with('galat', 'Akses ditolak: peran Anda tidak dapat mengubah pengaturan.');
+        }
+
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+
+        $data = $request->validate([
+            'nama_aplikasi' => ['required', 'string', 'max:100'],
+            'nama_instansi' => ['required', 'string', 'max:200'],
+            'tahun_aktif' => ['required', 'integer', 'min:2020', 'max:2030'],
+            'zona_waktu' => ['required', 'string'],
+            'bahasa' => ['required', 'string', 'in:id,en'],
+            'format_angka' => ['required', 'string'],
+        ]);
+
+        foreach ($data as $k => $v) {
+            \App\Models\AppSetting::set($k, $v, $kdKlpd);
+        }
+
+        // Sinkronkan ke sesi
+        session([
+            'tahun' => (int) $data['tahun_aktif'],
+            'bahasa' => $data['bahasa'],
+        ]);
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan umum dan bahasa berhasil disimpan.');
+    }
+
+    public function simpanTampilan(Request $request)
+    {
+        $peran = session('peran');
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+
+        $data = $request->validate([
+            'tema_aktif' => ['nullable', 'string'],
+            'ukuran_halaman' => ['required', 'integer', 'in:25,50,100'],
+        ]);
+
+        if (!empty($data['tema_aktif'])) {
+            if ($peran !== 'super_admin') {
+                return redirect()->route('setting.pengaturan')->with('galat', 'Hanya Super Admin yang dapat mengganti skema warna.');
+            }
+            \App\Models\AppSetting::set('tema_aktif', $data['tema_aktif'], $kdKlpd);
+        }
+
+        \App\Models\AppSetting::set('ukuran_halaman', $data['ukuran_halaman'], $kdKlpd);
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan tampilan berhasil disimpan.');
+    }
+
+    public function simpanData(Request $request)
+    {
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return redirect()->route('setting.pengaturan')->with('galat', 'Akses ditolak.');
+        }
+
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+
+        $data = $request->validate([
+            'ambang_basi_jam' => ['required', 'integer', 'min:1'],
+            'batas_ekspor' => ['required', 'integer', 'min:100'],
+        ]);
+
+        \App\Models\AppSetting::set('ambang_basi_jam', $data['ambang_basi_jam'], $kdKlpd);
+        \App\Models\AppSetting::set('batas_ekspor', $data['batas_ekspor'], $kdKlpd);
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan data & sinkronisasi berhasil disimpan.');
     }
 
     public function simpanScheduler(Request $request)

@@ -45,57 +45,91 @@
 
         <div class="col gap-4">
 
+            @if (session('status'))
+                <div class="banner banner--sukses">
+                    <span class="banner__ikon"><x-ikon nama="check" :ukuran="16" /></span>
+                    <div>{{ session('status') }}</div>
+                </div>
+            @endif
+            @if (session('galat'))
+                <div class="banner banner--bahaya">
+                    <span class="banner__ikon"><x-ikon nama="alert" :ukuran="16" /></span>
+                    <div>{{ session('galat') }}</div>
+                </div>
+            @endif
+
+            <div class="banner banner--info" style="margin:0">
+                <span class="banner__ikon"><x-ikon nama="info" :ukuran="16" /></span>
+                <div>
+                    Konteks pengaturan saat ini untuk: <strong>{{ $kdKlpdAktif }} — {{ $namaKlpdAktif }}</strong>.
+                    Perubahan nilai disimpan secara persisten ke database (schema <code>public.app_settings</code>).
+                </div>
+            </div>
+
             {{-- ============ UMUM ============ --}}
-            <div class="card" id="umum">
+            <form class="card" id="umum" method="POST" action="{{ route('setting.pengaturan.umum') }}">
+                @csrf
                 <div class="card__head">
                     <div>
                         <h2>Umum</h2>
-                        <p>Identitas aplikasi dan instansi</p>
+                        <p>Identitas aplikasi, instansi, dan preferensi bahasa</p>
                     </div>
                 </div>
                 <div class="card__body">
                     <div class="grid grid-2 gap-4">
                         <div class="field">
                             <label for="nama-app">Nama Aplikasi</label>
-                            <input class="input" id="nama-app" value="{{ $nilai['umum']['nama_aplikasi'] }}">
+                            <input class="input" id="nama-app" name="nama_aplikasi" value="{{ $nilai['umum']['nama_aplikasi'] }}" required>
                         </div>
                         <div class="field">
                             <label for="nama-instansi">Nama Instansi</label>
-                            <input class="input" id="nama-instansi" value="{{ $nilai['umum']['nama_instansi'] }}">
+                            <input class="input" id="nama-instansi" name="nama_instansi" value="{{ $nilai['umum']['nama_instansi'] }}" required>
                         </div>
                         <div class="field">
                             <label for="tahun">Tahun Anggaran Aktif</label>
-                            <select class="select js-combobox-asal" id="tahun">
-                                @foreach ([2024, 2025, 2026, 2027] as $th)
-                                    <option @selected($nilai['umum']['tahun_aktif'] === $th)>{{ $th }}</option>
+                            <select class="select js-combobox-asal" id="tahun" name="tahun_aktif">
+                                @foreach ([2023, 2024, 2025, 2026, 2027] as $th)
+                                    <option value="{{ $th }}" @selected($nilai['umum']['tahun_aktif'] === $th)>{{ $th }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field">
                             <label for="tz">Zona Waktu</label>
-                            <select class="select js-combobox-asal" id="tz">
-                                <option>{{ $nilai['umum']['zona_waktu'] }}</option>
+                            <select class="select js-combobox-asal" id="tz" name="zona_waktu">
+                                @foreach (['Asia/Jakarta' => 'Asia/Jakarta (WIB)', 'Asia/Makassar' => 'Asia/Makassar (WITA)', 'Asia/Jayapura' => 'Asia/Jayapura (WIT)'] as $tzVal => $tzLabel)
+                                    <option value="{{ $tzVal }}" @selected($nilai['umum']['zona_waktu'] === $tzVal)>{{ $tzLabel }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="field">
-                            <label for="bahasa">Bahasa</label>
-                            <select class="select js-combobox-asal" id="bahasa">
-                                <option>Indonesia</option>
-                                <option>English</option>
+                            <label for="bahasa">Bahasa (Language)</label>
+                            <select class="select js-combobox-asal" id="bahasa" name="bahasa">
+                                <option value="id" @selected($nilai['umum']['bahasa'] === 'id')>Indonesia (Bahasa Indonesia)</option>
+                                <option value="en" @selected($nilai['umum']['bahasa'] === 'en')>English (Inggris)</option>
                             </select>
+                            <span class="field__hint">Pilihan bahasa disimpan di sesi dan database</span>
                         </div>
                         <div class="field">
                             <label for="format">Format Angka</label>
-                            <select class="select js-combobox-asal" id="format">
-                                <option>{{ $nilai['umum']['format_angka'] }}</option>
+                            <select class="select js-combobox-asal" id="format" name="format_angka">
+                                <option value="Indonesia (1.234.567,89)" @selected($nilai['umum']['format_angka'] === 'Indonesia (1.234.567,89)')>Indonesia (1.234.567,89)</option>
+                                <option value="Standar (1,234,567.89)" @selected($nilai['umum']['format_angka'] === 'Standar (1,234,567.89)')>Standar (1,234,567.89)</option>
                             </select>
                         </div>
                     </div>
+
+                    <div class="row" style="justify-content:flex-end;margin-top:20px">
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            <x-ikon nama="check" :ukuran="14" />
+                            Simpan Pengaturan Umum
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
 
             {{-- ============ TAMPILAN ============ --}}
-            <div class="card" id="tampilan">
+            <form class="card" id="tampilan" method="POST" action="{{ route('setting.pengaturan.tampilan') }}">
+                @csrf
                 <div class="card__head">
                     <div>
                         <h2>Tampilan</h2>
@@ -111,7 +145,7 @@
                     @if (session('peran') === 'super_admin')
                         <p class="text-sm text-mute" style="margin-bottom:12px">
                             Anda dapat mengubah tema karena berperan Super Admin. Perubahan
-                            berlaku untuk semua pengguna di domain ini.
+                            berlaku untuk semua pengguna pada konteks wilayah {{ $kdKlpdAktif }}.
                         </p>
                     @else
                         <div class="banner banner--info" style="margin-bottom:12px">
@@ -120,9 +154,11 @@
                         </div>
                     @endif
 
+                    <input type="hidden" name="tema_aktif" id="input-tema-aktif" value="{{ $nilai['tampilan']['tema_aktif'] }}">
+
                     <div class="tema-pilih">
                         @foreach ($tema as $kunci => $t)
-                            @php $dipilih = $tenant->namaTema() === $kunci; @endphp
+                            @php $dipilih = ($nilai['tampilan']['tema_aktif'] ?? $tenant->namaTema()) === $kunci; @endphp
                             <button
                                 class="tema-kartu {{ $dipilih ? 'is-dipilih' : '' }}"
                                 type="button"
@@ -148,10 +184,10 @@
                             <div class="fw-600 text-sm">Ukuran halaman default</div>
                             <div class="text-xs text-mute">Jumlah baris per halaman pada tabel</div>
                         </div>
-                        <select class="select js-combobox-asal" style="width:120px">
-                            <option>25</option>
-                            <option selected>50</option>
-                            <option>100</option>
+                        <select class="select js-combobox-asal" name="ukuran_halaman" style="width:120px">
+                            <option value="25" @selected($nilai['tampilan']['ukuran_halaman'] === 25)>25</option>
+                            <option value="50" @selected($nilai['tampilan']['ukuran_halaman'] === 50)>50</option>
+                            <option value="100" @selected($nilai['tampilan']['ukuran_halaman'] === 100)>100</option>
                         </select>
                     </div>
 
@@ -165,8 +201,15 @@
                             <span class="switch__track"></span>
                         </label>
                     </div>
+
+                    <div class="row" style="justify-content:flex-end;margin-top:20px">
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            <x-ikon nama="check" :ukuran="14" />
+                            Simpan Tampilan
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
 
             {{-- ============ SCHEDULER (JADWAL OTOMATIS) ============ --}}
             <form class="card" id="scheduler" method="POST" action="{{ route('setting.scheduler.simpan') }}">
@@ -251,7 +294,8 @@
             </form>
 
             {{-- ============ DATA ============ --}}
-            <div class="card" id="data">
+            <form class="card" id="data" method="POST" action="{{ route('setting.pengaturan.data') }}">
+                @csrf
                 <div class="card__head">
                     <div>
                         <h2>Data &amp; Sinkronisasi</h2>
@@ -262,39 +306,46 @@
                     <div class="grid grid-2 gap-4">
                         <div class="field">
                             <label for="basi">Ambang data basi (jam)</label>
-                            <input class="input" id="basi" type="number" value="{{ $nilai['data']['ambang_basi_jam'] }}">
+                            <input class="input" id="basi" name="ambang_basi_jam" type="number" value="{{ $nilai['data']['ambang_basi_jam'] }}" required min="1">
                             <span class="field__hint">Peringatan muncul bila data lebih tua dari nilai ini</span>
                         </div>
                         <div class="field">
                             <label for="ekspor">Batas baris ekspor</label>
-                            <input class="input" id="ekspor" type="number" value="{{ $nilai['data']['batas_ekspor'] }}">
+                            <input class="input" id="ekspor" name="batas_ekspor" type="number" value="{{ $nilai['data']['batas_ekspor'] }}" required min="100">
                             <span class="field__hint">Ekspor di atas batas akan ditolak</span>
                         </div>
                         <div class="field">
                             <label for="jadwal">Jadwal refresh angka</label>
-                            <input class="input" id="jadwal" value="{{ $nilai['data']['jadwal_refresh'] }}">
-                            <span class="field__hint">Setelah pipeline selesai menarik data</span>
+                            <input class="input" id="jadwal" value="{{ $nilai['data']['jadwal_refresh'] }}" disabled style="background:var(--gray-50)">
+                            <span class="field__hint">Dikelola otomatis pada tab Scheduler di atas</span>
                         </div>
                         <div class="field">
                             <label for="auto">Refresh otomatis</label>
                             <div class="row gap-2" style="height:38px">
                                 <label class="switch">
-                                    <input type="checkbox" @checked($nilai['data']['refresh_otomatis'])>
+                                    <input type="checkbox" @checked($nilai['data']['refresh_otomatis']) disabled>
                                     <span class="switch__track"></span>
                                 </label>
-                                <span class="text-sm text-soft">Aktif</span>
+                                <span class="text-sm text-soft">Aktif (Scheduler)</span>
                             </div>
                         </div>
                     </div>
+
+                    <div class="row" style="justify-content:flex-end;margin-top:20px">
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            <x-ikon nama="check" :ukuran="14" />
+                            Simpan Pengaturan Data
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
 
             {{-- ============ DOMAIN ============ --}}
             <div class="card" id="domain">
                 <div class="card__head">
                     <div>
-                        <h2>Domain &amp; KLPD</h2>
-                        <p>Setiap KLPD memiliki domain dan identitas visual sendiri</p>
+                        <h2>Domain &amp; Wilayah KLPD</h2>
+                        <p>Daftar 20 wilayah KLPD Sumatera Barat dan status aktifnya</p>
                     </div>
                 </div>
                 <div class="card__body card__body--flush">
@@ -304,25 +355,24 @@
                             <thead>
                                 <tr>
                                     <th>Kode</th>
-                                    <th>Domain</th>
-                                    <th>Tema</th>
-                                    <th>Status</th>
+                                    <th>Nama Instansi / Pemda</th>
+                                    <th>Status Konteks</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($daftarTenant as $kunci => $t)
-                                    @php $temaT = config('sipedal.tema.' . $t['tema'], config('sipedal.tema.biru')); @endphp
-                                    <tr>
-                                        <td class="sel-kode">{{ $t['kode'] }}</td>
-                                        <td class="mono text-xs">{{ $t['domain'] }}</td>
-                                        <td>
-                                            <span class="row gap-2 text-sm">
-                                                <span class="legend__warna" style="background:{{ $temaT['tokens']['--brand-600'] }};width:10px;height:10px"></span>
-                                                {{ $temaT['nama'] }}
-                                            </span>
+                                @foreach (\App\Support\KlpdList::semua() as $klpdItem)
+                                    @php $isAktifSesi = ($sesiKdKlpd === $klpdItem['kode']); @endphp
+                                    <tr style="{{ $isAktifSesi ? 'background:var(--brand-50)' : '' }}">
+                                        <td class="sel-kode fw-600">{{ $klpdItem['kode'] }}</td>
+                                        <td class="text-sm">
+                                            <strong>{{ $klpdItem['nama'] }}</strong>
                                         </td>
                                         <td>
-                                            <span class="badge badge--hijau"><span class="badge__dot"></span> Aktif</span>
+                                            @if ($isAktifSesi)
+                                                <span class="badge badge--hijau"><span class="badge__dot"></span> Sedang Aktif</span>
+                                            @else
+                                                <span class="text-xs text-mute">Tersedia</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -332,7 +382,7 @@
                 </div>
                 <div class="card__foot" style="justify-content:flex-end">
                     <a class="btn btn-ghost btn-sm" href="{{ route('master.klpd') }}">
-                        Kelola KLPD
+                        Kelola Master KLPD
                         <x-ikon nama="arrow-right" :ukuran="13" />
                     </a>
                 </div>
@@ -355,6 +405,9 @@
                 if (k.disabled) return;
                 var tema = k.dataset.pilihTema;
                 kartu.forEach(function (x) { x.classList.toggle('is-dipilih', x === k); });
+
+                var inputTema = document.getElementById('input-tema-aktif');
+                if (inputTema) inputTema.value = tema;
 
                 if (token[tema]) {
                     Object.keys(token[tema]).forEach(function (nama) {
