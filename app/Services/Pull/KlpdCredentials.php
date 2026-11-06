@@ -33,11 +33,10 @@ class KlpdCredentials
         }
 
         $fromDb = $this->fromDatabase();
-        if (!empty($fromDb)) {
-            return $fromDb;
-        }
+        $fromFile = $this->fromFile();
 
-        return $this->fromFile();
+        // Gabungkan keduanya: database sebagai prioritas utama, file sebagai pelengkap
+        return array_replace($fromFile, $fromDb);
     }
 
     /**
@@ -109,7 +108,32 @@ class KlpdCredentials
      */
     public function for(string $kodeKlpd): ?array
     {
-        return $this->all()[$kodeKlpd] ?? null;
+        $all = $this->all();
+        $code = strtoupper(trim($kodeKlpd));
+
+        if (isset($all[$code])) {
+            return $all[$code];
+        }
+
+        // Coba case-insensitive jika kunci tersimpan format lain
+        foreach ($all as $k => $v) {
+            if (strtoupper((string) $k) === $code) {
+                return $v;
+            }
+        }
+
+        // Fallback langsung ke model KlpdCredential jika belum termuat di all()
+        if (\Illuminate\Support\Facades\Schema::hasTable('klpd_credentials')) {
+            $cred = \App\Models\KlpdCredential::where('kode', $code)->orWhere('kode', strtolower($kodeKlpd))->first();
+            if ($cred && $cred->token !== '') {
+                return [
+                    'token' => $cred->token,
+                    'label' => (string) ($cred->label ?: $code),
+                ];
+            }
+        }
+
+        return null;
     }
 
     public function hasToken(string $kodeKlpd): bool

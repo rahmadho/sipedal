@@ -119,8 +119,7 @@ class InaprocPullCommand extends Command
             $registered = array_keys($credentials->all());
 
             if ($registered === []) {
-                $this->error('Tidak ada KLPD terdaftar. Isi berkas kredensial lebih dulu:');
-                $this->line('  '.config('inaproc.klpd_file'));
+                $this->error('Tidak ada KLPD terdaftar. Isi token di menu Pengaturan lebih dulu.');
 
                 return null;
             }
@@ -128,7 +127,7 @@ class InaprocPullCommand extends Command
             $klpd = $this->choice('Pilih KLPD', $registered);
         }
 
-        return [(string) $klpd];
+        return [strtoupper(trim((string) $klpd))];
     }
 
     /**
