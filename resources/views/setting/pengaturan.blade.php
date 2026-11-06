@@ -27,6 +27,7 @@
                         ['kunci' => 'tampilan', 'label' => 'Tampilan', 'ikon' => 'palette'],
                         ['kunci' => 'scheduler', 'label' => 'Jadwal Otomatis (Scheduler)', 'ikon' => 'clock'],
                         ['kunci' => 'token', 'label' => 'Token API KLPD', 'ikon' => 'key'],
+                        ['kunci' => 'whatsapp', 'label' => 'WhatsApp Gateway', 'ikon' => 'send'],
                         ['kunci' => 'data', 'label' => 'Data & Sinkronisasi', 'ikon' => 'database'],
                         ['kunci' => 'domain', 'label' => 'Domain & KLPD', 'ikon' => 'domain'],
                     ];
@@ -421,6 +422,154 @@
                 </div>
             </form>
 
+            {{-- ============ WHATSAPP GATEWAY ============ --}}
+            <form class="card" id="whatsapp" method="POST" action="{{ route('setting.pengaturan.whatsapp') }}">
+                @csrf
+                <div class="card__head">
+                    <div>
+                        <h2>Pengaturan WhatsApp Gateway</h2>
+                        <p>Konfigurasi integrasi gateway WhatsApp untuk notifikasi otomatis pipeline dan audit data</p>
+                    </div>
+                    <div class="head-aksi">
+                        @if (($waConfig['status'] ?? 'disconnected') === 'connected')
+                            <span class="badge badge--hijau"><span class="badge__dot"></span> Device Terhubung</span>
+                        @else
+                            <span class="badge badge--netral">Device Belum Terhubung</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card__body">
+                    <div class="banner banner--info" style="margin-bottom:16px">
+                        <span class="banner__ikon"><x-ikon nama="send" :ukuran="16" /></span>
+                        <div>
+                            WhatsApp Gateway mandiri berbasis <strong>Baileys (Node.js)</strong> sudah aktif di server lokal port <code>8090</code> (100% gratis tanpa biaya vendor).
+                            Anda dapat mendaftarkan/menautkan nomor WhatsApp dengan memindai kode QR di bawah ini.
+                        </div>
+                    </div>
+
+                    {{-- Card Status Device & Scan QR --}}
+                    <div class="card" style="border:1px solid var(--border);background:var(--surface);margin-bottom:20px">
+                        <div class="card__body" style="padding:16px">
+                            <div class="row-between wrap gap-3" style="align-items:center">
+                                <div>
+                                    <div class="fw-700 text-sm">Status Perangkat WhatsApp (Baileys)</div>
+                                    <div class="text-xs text-mute" id="wa-device-detail">Memeriksa status perangkat…</div>
+                                </div>
+                                <div class="row gap-2">
+                                    <button class="btn btn-primary btn-sm" type="button" id="btn-wa-pair">
+                                        <x-ikon nama="refresh" :ukuran="14" />
+                                        Tautkan Perangkat (Scan QR)
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm" type="button" id="btn-wa-logout" style="color:var(--red-600);display:none">
+                                        <x-ikon nama="logout" :ukuran="14" />
+                                        Putuskan (Logout)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Area QR Code --}}
+                            <div id="wadah-wa-qr" style="display:none;margin-top:16px;padding-top:16px;border-top:1px dashed var(--border);text-align:center">
+                                <div class="fw-600 text-sm" style="margin-bottom:4px">Pindai Kode QR Ini di WhatsApp Anda</div>
+                                <div class="text-xs text-mute" style="margin-bottom:12px">
+                                    Buka WhatsApp di HP &gt; Menu Titik Tiga / Pengaturan &gt; <strong>Perangkat Tertaut (Linked Devices)</strong> &gt; Tautkan Perangkat.
+                                </div>
+                                <div style="display:inline-block;padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)">
+                                    <img id="img-wa-qr" src="" alt="QR Code WhatsApp" style="width:240px;height:240px;display:block">
+                                </div>
+                                <div class="text-xs text-mute" style="margin-top:10px">Kode QR akan otomatis disegarkan setiap 20 detik</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-2 gap-4">
+                        <div class="field">
+                            <label for="wa-provider">Tipe Gateway</label>
+                            <select class="select js-combobox-asal" id="wa-provider" name="wa_provider">
+                                <option value="custom" @selected(($waConfig['provider'] ?? '') === 'custom')>Custom Gateway / Self-Hosted (Gratis/NodeJS)</option>
+                                <option value="baileys" @selected(($waConfig['provider'] ?? '') === 'baileys')>Baileys / WPPConnect HTTP API</option>
+                                <option value="fonnte" @selected(($waConfig['provider'] ?? '') === 'fonnte')>Fonnte API</option>
+                                <option value="wablas" @selected(($waConfig['provider'] ?? '') === 'wablas')>Wablas API</option>
+                            </select>
+                            <span class="field__hint">Pilih protokol gateway yang digunakan</span>
+                        </div>
+
+                        <div class="field">
+                            <label for="wa-device-id">Device ID / Nama Sesi</label>
+                            <input class="input mono" id="wa-device-id" name="wa_device_id"
+                                   value="{{ $waConfig['device_id'] ?? '' }}"
+                                   placeholder="mis. sipedal-device-01 atau session1">
+                            <span class="field__hint">Pengenal unik perangkat WhatsApp Anda</span>
+                        </div>
+
+                        <div class="field" style="grid-column: 1 / -1">
+                            <label for="wa-endpoint-url">Endpoint URL Kirim Pesan (API URL)</label>
+                            <input class="input mono" id="wa-endpoint-url" name="wa_endpoint_url"
+                                   value="{{ $waConfig['endpoint_url'] ?? '' }}"
+                                   placeholder="http://localhost:3000/send-message atau https://api.fonnte.com/send">
+                            <span class="field__hint">URL REST API gateway yang menerima request pengiriman pesan</span>
+                        </div>
+
+                        <div class="field">
+                            <label for="wa-api-key">API Key / Token Rahasia (Opsional)</label>
+                            <input type="password" class="input mono" id="wa-api-key" name="wa_api_key"
+                                   value="{{ $waConfig['api_key'] ?? '' }}"
+                                   placeholder="Authorization Token atau API Key">
+                            <span class="field__hint">Dikosongkan jika gateway lokal tidak memakai autentikasi</span>
+                        </div>
+
+                        <div class="field">
+                            <label for="wa-target-nomor">Nomor HP Admin Penerima Notifikasi</label>
+                            <input class="input mono" id="wa-target-nomor" name="wa_target_nomor"
+                                   value="{{ $waConfig['target_nomor'] ?? '' }}"
+                                   placeholder="mis. 08123456789 atau 628123456789">
+                            <span class="field__hint">Nomor default penerima laporan harian sistem</span>
+                        </div>
+                    </div>
+
+                    <div class="pemisah" style="margin:20px 0 16px"></div>
+
+                    <div class="col gap-3">
+                        <div class="fw-600 text-sm">Pemicu Notifikasi Otomatis</div>
+                        <div class="row-between wrap gap-2">
+                            <div>
+                                <div class="fw-500 text-sm">Notifikasi Penarikan Data Selesai (Sukses)</div>
+                                <div class="text-xs text-mute">Kirim ringkasan saat cron/scheduler berhasil menarik data</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" name="wa_notif_sync_selesai" value="1" @checked($waConfig['notif_sync_selesai'] ?? true)>
+                                <span class="switch__track"></span>
+                            </label>
+                        </div>
+                        <div class="row-between wrap gap-2">
+                            <div>
+                                <div class="fw-500 text-sm">Peringatan Kegagalan / Kendala Tarik Data</div>
+                                <div class="text-xs text-mute">Kirim pesan darurat jika ada endpoint 403 atau server API padam</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" name="wa_notif_sync_gagal" value="1" @checked($waConfig['notif_sync_gagal'] ?? true)>
+                                <span class="switch__track"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row-between wrap gap-3" style="margin-top:24px;align-items:center">
+                        <div class="row gap-2">
+                            <button class="btn btn-ghost btn-sm" type="button" id="btn-tes-wa">
+                                <x-ikon nama="send" :ukuran="14" />
+                                Uji Kirim Pesan
+                            </button>
+                            <span id="status-tes-wa" class="text-xs" style="align-self:center"></span>
+                        </div>
+
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            <x-ikon nama="check" :ukuran="14" />
+                            Simpan Pengaturan WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </form>
+
             {{-- ============ DATA ============ --}}
             <form class="card" id="data" method="POST" action="{{ route('setting.pengaturan.data') }}">
                 @csrf
@@ -625,6 +774,136 @@
                 }
             });
         });
+    })();
+
+    // ---------- Logika WhatsApp Gateway (Baileys) ----------
+    (function () {
+        var btnPair = document.getElementById('btn-wa-pair');
+        var btnLogout = document.getElementById('btn-wa-logout');
+        var btnTes = document.getElementById('btn-tes-wa');
+        var statusTes = document.getElementById('status-tes-wa');
+        var deviceDetail = document.getElementById('wa-device-detail');
+        var wadahQr = document.getElementById('wadah-wa-qr');
+        var imgQr = document.getElementById('img-wa-qr');
+
+        var qrPollTimer = null;
+
+        function cekStatusWa() {
+            fetch('{{ route("setting.pengaturan.whatsapp.status") }}')
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res.ok || !res.status) {
+                        deviceDetail.innerHTML = '<span class="text-mute">Layanan Baileys lokal belum aktif di port 8090.</span>';
+                        return;
+                    }
+                    var s = res.status;
+                    if (s.connected) {
+                        var no = s.paired_number ? '+' + s.paired_number : 'Nomor tidak diketahui';
+                        deviceDetail.innerHTML = '<strong style="color:var(--green-700)">✓ Terhubung</strong> sebagai <strong>' + no + '</strong> (' + (s.paired_name || 'WhatsApp') + ')';
+                        wadahQr.style.display = 'none';
+                        btnPair.style.display = 'none';
+                        btnLogout.style.display = 'inline-flex';
+                        if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
+                    } else if (s.qr_pending) {
+                        deviceDetail.innerHTML = '<span style="color:var(--amber-700)">• Menunggu pemindaian QR code…</span>';
+                        wadahQr.style.display = 'block';
+                        imgQr.src = res.qr_url;
+                        btnPair.style.display = 'inline-flex';
+                        btnLogout.style.display = 'none';
+                    } else {
+                        deviceDetail.innerHTML = '<span class="text-mute">• Perangkat belum dipasangkan. Klik "Tautkan Perangkat" untuk scan QR.</span>';
+                        wadahQr.style.display = 'none';
+                        btnPair.style.display = 'inline-flex';
+                        btnLogout.style.display = 'none';
+                    }
+                })
+                .catch(function () {
+                    deviceDetail.innerHTML = '<span class="text-mute">Tidak dapat terhubung ke service WhatsApp lokal.</span>';
+                });
+        }
+
+        cekStatusWa();
+
+        if (btnPair) {
+            btnPair.addEventListener('click', function () {
+                deviceDetail.innerHTML = '<span class="text-mute">Membuat sesi QR pairing…</span>';
+                btnPair.disabled = true;
+
+                fetch('{{ route("setting.pengaturan.whatsapp.pair") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function () {
+                    btnPair.disabled = false;
+                    cekStatusWa();
+                    if (!qrPollTimer) {
+                        qrPollTimer = setInterval(cekStatusWa, 5000);
+                    }
+                })
+                .catch(function () {
+                    btnPair.disabled = false;
+                    cekStatusWa();
+                });
+            });
+        }
+
+        if (btnLogout) {
+            btnLogout.addEventListener('click', function () {
+                if (!confirm('Apakah Anda yakin ingin memutuskan koneksi perangkat WhatsApp ini?')) return;
+                btnLogout.disabled = true;
+
+                fetch('{{ route("setting.pengaturan.whatsapp.logout") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function () {
+                    btnLogout.disabled = false;
+                    cekStatusWa();
+                })
+                .catch(function () {
+                    btnLogout.disabled = false;
+                });
+            });
+        }
+
+        if (btnTes) {
+            btnTes.addEventListener('click', function () {
+                var no = document.getElementById('wa-target-nomor')?.value?.trim();
+                statusTes.innerHTML = '<span class="text-mute">Mengirim pesan uji coba…</span>';
+                btnTes.disabled = true;
+
+                fetch('{{ route("setting.pengaturan.whatsapp.tes") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ nomor: no })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    btnTes.disabled = false;
+                    if (res.ok) {
+                        statusTes.innerHTML = '<span style="color:var(--green-700)">✓ ' + res.pesan + '</span>';
+                    } else {
+                        statusTes.innerHTML = '<span style="color:var(--red-700)">✗ ' + res.pesan + '</span>';
+                    }
+                })
+                .catch(function (e) {
+                    btnTes.disabled = false;
+                    statusTes.innerHTML = '<span style="color:var(--red-700)">✗ Galat jaringan: ' + e.message + '</span>';
+                });
+            });
+        }
     })();
 
     // ---------- Logika Media Manager ----------

@@ -26,6 +26,8 @@ _ide_helper.php
 # Kredensial KLPD — wajib di luar VCS (F8)
 /storage/app/klpd_tokens.json
 /storage/app/*klpd_tokens*.json
+/wa-gateway/node_modules
+/wa-gateway/.wa-auth
 .env.backup.*
 Homestead.json
 Homestead.yaml

@@ -190,6 +190,7 @@ class SettingController extends Controller
             'kdKlpdAktif' => $kdKlpd,
             'namaKlpdAktif' => $namaKlpd,
             'daftarKlpdToken' => $daftarKlpdToken,
+            'waConfig' => \App\Support\WhatsAppGateway::config($kdKlpd),
         ]);
     }
 
@@ -313,6 +314,118 @@ class SettingController extends Controller
         }
 
         return redirect()->route('setting.pengaturan')->with('status', 'Tidak ada token yang diperbarui (isian kosong).');
+    }
+
+    public function simpanWhatsApp(Request $request)
+    {
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return redirect()->route('setting.pengaturan')->with('galat', 'Akses ditolak.');
+        }
+
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+
+        $data = $request->validate([
+            'wa_provider' => ['required', 'string'],
+            'wa_endpoint_url' => ['required', 'string'],
+            'wa_device_id' => ['nullable', 'string', 'max:64'],
+            'wa_api_key' => ['nullable', 'string', 'max:255'],
+            'wa_target_nomor' => ['nullable', 'string', 'max:30'],
+            'wa_notif_sync_selesai' => ['nullable', 'boolean'],
+            'wa_notif_sync_gagal' => ['nullable', 'boolean'],
+        ]);
+
+        \App\Models\AppSetting::set('wa_provider', $data['wa_provider'], $kdKlpd);
+        \App\Models\AppSetting::set('wa_endpoint_url', $data['wa_endpoint_url'], $kdKlpd);
+        \App\Models\AppSetting::set('wa_device_id', $data['wa_device_id'] ?? 'sipedal-wa', $kdKlpd);
+        if (isset($data['wa_api_key'])) {
+            \App\Models\AppSetting::set('wa_api_key', $data['wa_api_key'], $kdKlpd);
+        }
+        \App\Models\AppSetting::set('wa_target_nomor', $data['wa_target_nomor'] ?? '', $kdKlpd);
+        \App\Models\AppSetting::set('wa_notif_sync_selesai', $request->boolean('wa_notif_sync_selesai') ? '1' : '0', $kdKlpd);
+        \App\Models\AppSetting::set('wa_notif_sync_gagal', $request->boolean('wa_notif_sync_gagal') ? '1' : '0', $kdKlpd);
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan WhatsApp Gateway berhasil disimpan.');
+    }
+
+    public function statusWhatsApp(Request $request)
+    {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $status = \App\Support\WhatsAppGateway::status($kdKlpd);
+        $qrUrl = route('setting.pengaturan.whatsapp.qr') . '?t=' . time();
+
+        return response()->json([
+            'ok' => true,
+            'status' => $status,
+            'qr_url' => $qrUrl,
+        ]);
+    }
+
+    public function qrWhatsApp(Request $request)
+    {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $cfg = \App\Support\WhatsAppGateway::config($kdKlpd);
+        $baseUrl = rtrim($cfg['endpoint_url'], '/');
+
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(5)->get("{$baseUrl}/session/qr?format=png");
+            if ($resp->successful()) {
+                return response($resp->body(), 200, [
+                    'Content-Type' => 'image/png',
+                    'Cache-Control' => 'no-store, no-cache, must-revalidate',
+                ]);
+            }
+        } catch (\Throwable) {
+            //
+        }
+
+        return response('', 404);
+    }
+
+    public function pairWhatsApp(Request $request)
+    {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $res = \App\Support\WhatsAppGateway::requestPair($kdKlpd);
+
+        return response()->json($res);
+    }
+
+    public function logoutWhatsApp(Request $request)
+    {
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $res = \App\Support\WhatsAppGateway::logout($kdKlpd);
+
+        return response()->json($res);
+    }
+
+    public function tesWhatsApp(Request $request)
+    {
+        $peran = session('peran');
+        if (!in_array($peran, ['super_admin', 'operator', 'admin_pbj'], true)) {
+            return response()->json(['ok' => false, 'pesan' => 'Akses ditolak.'], 403);
+        }
+
+        $kdKlpd = session('kd_klpd', app(\App\Support\Tenant::class)->kode());
+        $cfg = \App\Support\WhatsAppGateway::config($kdKlpd);
+
+        $nomor = $request->input('nomor') ?: $cfg['target_nomor'];
+        if (empty($nomor)) {
+            return response()->json([
+                'ok' => false,
+                'pesan' => 'Harap isi nomor HP tujuan terlebih dahulu.',
+            ], 422);
+        }
+
+        $namaKlpd = \App\Support\KlpdList::nama($kdKlpd) ?? 'Sipedal';
+        $waktu = now()->format('d/m/Y H:i:s');
+        $pesan = "🔔 *UJI COBA WHATSAPP GATEWAY SIPEDAL*\n\n"
+               . "Halo, pesan ini adalah uji coba koneksi gateway WhatsApp untuk wilayah *{$namaKlpd}* ({$kdKlpd}).\n"
+               . "Waktu kirim: {$waktu} WIB.\n"
+               . "Status: Gateway Baileys aktif dan terhubung sempurna. ✅";
+
+        $res = \App\Support\WhatsAppGateway::kirimPesan($nomor, $pesan, $kdKlpd);
+
+        return response()->json($res);
     }
 
     public function simpanScheduler(Request $request)

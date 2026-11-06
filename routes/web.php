@@ -58,6 +58,12 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
     Route::post('/setting/pengaturan/umum', [SettingController::class, 'simpanUmum'])->name('setting.pengaturan.umum');
     Route::post('/setting/pengaturan/tampilan', [SettingController::class, 'simpanTampilan'])->name('setting.pengaturan.tampilan');
     Route::post('/setting/pengaturan/token', [SettingController::class, 'simpanToken'])->name('setting.pengaturan.token');
+    Route::post('/setting/pengaturan/whatsapp', [SettingController::class, 'simpanWhatsApp'])->name('setting.pengaturan.whatsapp');
+    Route::get('/setting/pengaturan/whatsapp/status', [SettingController::class, 'statusWhatsApp'])->name('setting.pengaturan.whatsapp.status');
+    Route::get('/setting/pengaturan/whatsapp/qr', [SettingController::class, 'qrWhatsApp'])->name('setting.pengaturan.whatsapp.qr');
+    Route::post('/setting/pengaturan/whatsapp/pair', [SettingController::class, 'pairWhatsApp'])->name('setting.pengaturan.whatsapp.pair');
+    Route::post('/setting/pengaturan/whatsapp/logout', [SettingController::class, 'logoutWhatsApp'])->name('setting.pengaturan.whatsapp.logout');
+    Route::post('/setting/pengaturan/whatsapp/tes', [SettingController::class, 'tesWhatsApp'])->name('setting.pengaturan.whatsapp.tes');
     Route::post('/setting/pengaturan/data', [SettingController::class, 'simpanData'])->name('setting.pengaturan.data');
     Route::post('/setting/scheduler', [SettingController::class, 'simpanScheduler'])->name('setting.scheduler.simpan');
     Route::get('/setting/profile', [SettingController::class, 'profile'])->name('setting.profile');

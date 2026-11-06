@@ -1,0 +1,24 @@
+{
+  "name": "sipedal-wa-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sipedal WhatsApp Gateway — provider Baileys (real WhatsApp multi-device with QR pairing + persistent session).",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "start:mock": "WA_PROVIDER=mock node src/server.js",
+    "start:baileys": "WA_PROVIDER=baileys node src/server.js",
+    "pair": "node scripts/pair.js",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
