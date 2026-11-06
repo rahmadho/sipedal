@@ -194,9 +194,10 @@
 <script>
     // ---------- Latar bergantian dengan transisi ----------
     (function () {
+        var animasiAktif = {{ !empty($animasi) ? 'true' : 'false' }};
         var slide = Array.prototype.slice.call(document.querySelectorAll('[data-slide]'));
         var dot = Array.prototype.slice.call(document.querySelectorAll('[data-dot]'));
-        if (slide.length < 2) return;
+        if (slide.length < 2 || !animasiAktif) return;
 
         var aktif = 0;
         var timer = null;

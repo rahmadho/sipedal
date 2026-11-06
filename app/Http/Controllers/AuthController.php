@@ -22,9 +22,21 @@ class AuthController extends Controller
     public function tampil(Request $request)
     {
         $tenant = app(\App\Support\Tenant::class);
+        $kdKlpd = $tenant->kode();
+
+        // Ambil pengaturan gambar latar dan status animasi dari AppSetting
+        $bgSetting = \App\Models\AppSetting::get('login_bg_list', $kdKlpd);
+        if ($bgSetting) {
+            $latar = json_decode($bgSetting, true) ?: $tenant->latarLogin();
+        } else {
+            $latar = $tenant->latarLogin();
+        }
+
+        $animasi = (bool) \App\Models\AppSetting::get('animasi_login', $kdKlpd, true);
 
         return view('auth.login', [
-            'latar' => $tenant->latarLogin(),
+            'latar' => $latar,
+            'animasi' => $animasi,
             'satker' => SatkerPilihan::semua(),
         ]);
     }

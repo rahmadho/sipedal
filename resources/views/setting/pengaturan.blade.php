@@ -194,12 +194,39 @@
                     <div class="row-between wrap gap-3" style="margin-top:14px">
                         <div>
                             <div class="fw-600 text-sm">Animasi transisi latar login</div>
-                            <div class="text-xs text-mute">Gambar bergantian dengan transisi halus</div>
+                            <div class="text-xs text-mute">Gambar bergantian dengan transisi halus secara otomatis</div>
                         </div>
                         <label class="switch">
-                            <input type="checkbox" @checked($nilai['tampilan']['animasi_login'])>
+                            <input type="checkbox" name="animasi_login" value="1" @checked($nilai['tampilan']['animasi_login'])>
                             <span class="switch__track"></span>
                         </label>
+                    </div>
+
+                    <div class="pemisah" style="margin:16px 0"></div>
+
+                    <div>
+                        <div class="fw-600 text-sm" style="margin-bottom:4px">Gambar Latar Login (Maksimal 5 Gambar)</div>
+                        <div class="text-xs text-mute" style="margin-bottom:12px">
+                            Masukkan path aset lokal (mis. <code>img/login/bg-01.svg</code>) atau URL gambar eksternal (HTTPS).
+                        </div>
+
+                        <div class="col gap-2" id="wadah-latar-gambar">
+                            @php
+                                $latarGambar = $nilai['tampilan']['latar_gambar'] ?? [];
+                                while (count($latarGambar) < 5) {
+                                    $latarGambar[] = '';
+                                }
+                            @endphp
+                            @foreach (array_slice($latarGambar, 0, 5) as $idx => $bgItem)
+                                <div class="row gap-2" style="align-items:center">
+                                    <span class="badge badge--netral" style="width:28px;justify-content:center">{{ $idx + 1 }}</span>
+                                    <input class="input input--sm mono" name="latar_gambar[]"
+                                           value="{{ $bgItem }}"
+                                           placeholder="img/login/bg-0{{ $idx + 1 }}.svg atau https://..."
+                                           style="font-size:12px;height:34px">
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     <div class="row" style="justify-content:flex-end;margin-top:20px">

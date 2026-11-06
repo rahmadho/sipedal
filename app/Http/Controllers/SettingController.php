@@ -151,6 +151,7 @@ class SettingController extends Controller
                 'tema_gelap' => false,
                 'animasi_login' => (bool) \App\Models\AppSetting::get('animasi_login', $kdKlpd, true),
                 'interval_transisi' => (int) \App\Models\AppSetting::get('interval_transisi', $kdKlpd, 6),
+                'latar_gambar' => json_decode((string) \App\Models\AppSetting::get('login_bg_list', $kdKlpd), true) ?: app(\App\Support\Tenant::class)->latarLogin(),
             ],
             'data' => [
                 'ambang_basi_jam' => (int) \App\Models\AppSetting::get('ambang_basi_jam', $kdKlpd, 48),
@@ -210,6 +211,9 @@ class SettingController extends Controller
         $data = $request->validate([
             'tema_aktif' => ['nullable', 'string'],
             'ukuran_halaman' => ['required', 'integer', 'in:25,50,100'],
+            'animasi_login' => ['nullable', 'boolean'],
+            'latar_gambar' => ['nullable', 'array', 'max:5'],
+            'latar_gambar.*' => ['nullable', 'string', 'max:255'],
         ]);
 
         if (!empty($data['tema_aktif'])) {
@@ -220,8 +224,17 @@ class SettingController extends Controller
         }
 
         \App\Models\AppSetting::set('ukuran_halaman', $data['ukuran_halaman'], $kdKlpd);
+        \App\Models\AppSetting::set('animasi_login', $request->boolean('animasi_login') ? '1' : '0', $kdKlpd);
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan tampilan berhasil disimpan.');
+        if (isset($data['latar_gambar'])) {
+            $filteredImages = array_values(array_filter(array_map('trim', $data['latar_gambar'])));
+            $filteredImages = array_slice($filteredImages, 0, 5);
+            if (!empty($filteredImages)) {
+                \App\Models\AppSetting::set('login_bg_list', json_encode($filteredImages), $kdKlpd);
+            }
+        }
+
+        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan tampilan dan latar login berhasil disimpan.');
     }
 
     public function simpanData(Request $request)
