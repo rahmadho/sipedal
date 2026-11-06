@@ -207,10 +207,10 @@
                     <div>
                         <div class="fw-600 text-sm" style="margin-bottom:4px">Gambar Latar Login (Maksimal 5 Gambar)</div>
                         <div class="text-xs text-mute" style="margin-bottom:12px">
-                            Masukkan path aset lokal (mis. <code>img/login/bg-01.svg</code>) atau URL gambar eksternal (HTTPS).
+                            Gunakan tombol <strong>Pilih Media</strong> untuk mengunggah berkas atau memasukkan URL gambar.
                         </div>
 
-                        <div class="col gap-2" id="wadah-latar-gambar">
+                        <div class="col gap-3" id="wadah-latar-gambar">
                             @php
                                 $latarGambar = $nilai['tampilan']['latar_gambar'] ?? [];
                                 while (count($latarGambar) < 5) {
@@ -219,11 +219,20 @@
                             @endphp
                             @foreach (array_slice($latarGambar, 0, 5) as $idx => $bgItem)
                                 <div class="row gap-2" style="align-items:center">
-                                    <span class="badge badge--netral" style="width:28px;justify-content:center">{{ $idx + 1 }}</span>
-                                    <input class="input input--sm mono" name="latar_gambar[]"
-                                           value="{{ $bgItem }}"
-                                           placeholder="img/login/bg-0{{ $idx + 1 }}.svg atau https://..."
-                                           style="font-size:12px;height:34px">
+                                    <span class="badge badge--netral" style="width:28px;height:34px;justify-content:center">{{ $idx + 1 }}</span>
+                                    <div class="input-wrap" style="flex:1">
+                                        <input class="input input--sm mono" name="latar_gambar[]" id="input-bg-{{ $idx }}"
+                                               value="{{ $bgItem }}"
+                                               placeholder="Pilih atau masukkan tautan gambar…"
+                                               style="font-size:12px;height:34px">
+                                    </div>
+                                    <button class="btn btn-ghost btn-sm" type="button" data-buka-media="{{ $idx }}" style="height:34px" title="Buka Media Manager">
+                                        <x-ikon nama="image" :ukuran="14" />
+                                        Pilih Media
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm" type="button" data-bersihkan-media="{{ $idx }}" style="height:34px;color:var(--text-mute)" title="Kosongkan">
+                                        <x-ikon nama="x" :ukuran="14" />
+                                    </button>
                                 </div>
                             @endforeach
                         </div>
@@ -418,6 +427,87 @@
         </div>
     </div>
 
+    {{-- ================= MODAL MEDIA MANAGER ================= --}}
+    <div class="modal-latar" id="latar-media" hidden>
+        <div class="modal modal--lebar" role="dialog" aria-modal="true" aria-labelledby="judul-media">
+            <div class="modal__head">
+                <div class="row-between wrap gap-2">
+                    <div>
+                        <h2 id="judul-media">Media Manager</h2>
+                        <p>Pilih dari pustaka, unggah berkas lokal, atau masukkan tautan URL luar</p>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" type="button" id="tutup-media-btn" style="color:var(--text-mute)">
+                        <x-ikon nama="x" :ukuran="16" />
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal__body" style="padding-top:10px">
+                <div class="media-tabs" role="tablist">
+                    <button class="media-tab is-active" type="button" data-tab-target="tab-pustaka">
+                        Pustaka Media
+                    </button>
+                    <button class="media-tab" type="button" data-tab-target="tab-unggah">
+                        Unggah Berkas
+                    </button>
+                    <button class="media-tab" type="button" data-tab-target="tab-url">
+                        Masukkan dari URL
+                    </button>
+                </div>
+
+                {{-- Tab 1: Pustaka Media --}}
+                <div id="tab-pustaka" class="media-tab-panel">
+                    <div class="row-between" style="margin-bottom:12px;align-items:center">
+                        <span class="text-xs text-mute" id="media-status-text">Memuat berkas media…</span>
+                        <button class="btn btn-ghost btn-sm" type="button" id="media-segarkan-btn">
+                            <x-ikon nama="refresh" :ukuran="13" /> Segarkan
+                        </button>
+                    </div>
+                    <div class="media-grid" id="media-galeri">
+                        {{-- Dimuat via fetch javascript --}}
+                    </div>
+                </div>
+
+                {{-- Tab 2: Unggah Berkas --}}
+                <div id="tab-unggah" class="media-tab-panel" hidden>
+                    <div class="unggah" id="area-drop-unggah" style="cursor:pointer">
+                        <input type="file" id="input-berkas-unggah" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none">
+                        <div class="unggah__ikon"><x-ikon nama="upload" :ukuran="32" /></div>
+                        <p><strong>Klik untuk memilih gambar</strong> atau seret berkas ke sini</p>
+                        <small>Mendukung format SVG, PNG, JPG, WEBP (Maksimal 4 MB)</small>
+                    </div>
+                    <div id="status-unggah" style="margin-top:12px;font-size:12px"></div>
+                </div>
+
+                {{-- Tab 3: Masukkan dari URL --}}
+                <div id="tab-url" class="media-tab-panel" hidden>
+                    <div class="field" style="margin-bottom:12px">
+                        <label for="input-url-eksternal">Tautan URL Gambar (HTTPS)</label>
+                        <div class="row gap-2">
+                            <input class="input" id="input-url-eksternal" placeholder="https://example.com/gambar.jpg">
+                            <button class="btn btn-primary btn-sm" type="button" id="btn-pratinjau-url">
+                                Pratinjau
+                            </button>
+                        </div>
+                        <span class="field__hint">Pastikan URL dapat diakses publik secara aman</span>
+                    </div>
+
+                    <div id="wadah-pratinjau-url" style="text-align:center;padding:16px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--gray-50);display:none">
+                        <img id="img-pratinjau-url" src="" alt="Pratinjau" style="max-height:160px;max-width:100%;border-radius:var(--radius)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal__foot" style="border-top:1px solid var(--border);padding-top:14px">
+                <button class="btn btn-ghost btn-sm" type="button" id="batal-media-btn">Batal</button>
+                <button class="btn btn-primary btn-sm" type="button" id="pilih-media-btn" disabled>
+                    <x-ikon nama="check" :ukuran="14" />
+                    Gunakan Gambar Ini
+                </button>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('skrip')
@@ -442,6 +532,190 @@
                     });
                 }
             });
+        });
+    })();
+
+    // ---------- Logika Media Manager ----------
+    (function () {
+        var latarModal = document.getElementById('latar-media');
+        var tutupBtn = document.getElementById('tutup-media-btn');
+        var batalBtn = document.getElementById('batal-media-btn');
+        var pilihBtn = document.getElementById('pilih-media-btn');
+        var galeri = document.getElementById('media-galeri');
+        var statusText = document.getElementById('media-status-text');
+        var segarkanBtn = document.getElementById('media-segarkan-btn');
+
+        var areaDrop = document.getElementById('area-drop-unggah');
+        var inputBerkas = document.getElementById('input-berkas-unggah');
+        var statusUnggah = document.getElementById('status-unggah');
+
+        var inputUrl = document.getElementById('input-url-eksternal');
+        var btnPratinjauUrl = document.getElementById('btn-pratinjau-url');
+        var wadahPratinjauUrl = document.getElementById('wadah-pratinjau-url');
+        var imgPratinjauUrl = document.getElementById('img-pratinjau-url');
+
+        var targetSlotIndex = null;
+        var mediaTerpilih = null; // { url, path }
+
+        // Buka modal dari tombol baris gambar latar
+        document.querySelectorAll('[data-buka-media]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                targetSlotIndex = btn.dataset.bukaMedia;
+                mediaTerpilih = null;
+                pilihBtn.disabled = true;
+                latarModal.hidden = false;
+                aktifkanTab('tab-pustaka');
+                muatDaftarMedia();
+            });
+        });
+
+        // Kosongkan input
+        document.querySelectorAll('[data-bersihkan-media]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var idx = btn.dataset.bersihkanMedia;
+                var inp = document.getElementById('input-bg-' + idx);
+                if (inp) inp.value = '';
+            });
+        });
+
+        function tutupModal() {
+            latarModal.hidden = true;
+            targetSlotIndex = null;
+            mediaTerpilih = null;
+        }
+
+        tutupBtn.addEventListener('click', tutupModal);
+        batalBtn.addEventListener('click', tutupModal);
+        latarModal.addEventListener('click', function (e) {
+            if (e.target === latarModal) tutupModal();
+        });
+
+        // Tab switching
+        document.querySelectorAll('.media-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                aktifkanTab(tab.dataset.tabTarget);
+            });
+        });
+
+        function aktifkanTab(tabId) {
+            document.querySelectorAll('.media-tab').forEach(function (t) {
+                t.classList.toggle('is-active', t.dataset.tabTarget === tabId);
+            });
+            document.querySelectorAll('.media-tab-panel').forEach(function (p) {
+                p.hidden = (p.id !== tabId);
+            });
+        }
+
+        // Muat daftar media via AJAX
+        function muatDaftarMedia() {
+            statusText.textContent = 'Memuat media…';
+            galeri.innerHTML = '';
+
+            fetch('{{ route("media.list") }}')
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res.ok || !res.data) {
+                        statusText.textContent = 'Gagal memuat media.';
+                        return;
+                    }
+                    var list = res.data;
+                    statusText.textContent = list.length + ' berkas media tersedia';
+
+                    if (list.length === 0) {
+                        galeri.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-mute)">Belum ada media diunggah.</div>';
+                        return;
+                    }
+
+                    list.forEach(function (item) {
+                        var div = document.createElement('div');
+                        div.className = 'media-item';
+                        div.innerHTML = '<img class="media-item__thumb" src="' + item.url + '" alt="">' +
+                                        '<div class="media-item__nama" title="' + item.nama + '">' + item.nama + '</div>' +
+                                        '<div class="media-item__meta">' + item.ukuran + ' · ' + item.waktu + '</div>';
+
+                        div.addEventListener('click', function () {
+                            document.querySelectorAll('.media-item').forEach(function (el) { el.classList.remove('is-selected'); });
+                            div.classList.add('is-selected');
+                            mediaTerpilih = item.path || item.url;
+                            pilihBtn.disabled = false;
+                        });
+
+                        galeri.appendChild(div);
+                    });
+                })
+                .catch(function () {
+                    statusText.textContent = 'Kesalahan saat menghubungi server.';
+                });
+        }
+
+        segarkanBtn.addEventListener('click', muatDaftarMedia);
+
+        // Upload berkas
+        areaDrop.addEventListener('click', function () { inputBerkas.click(); });
+        inputBerkas.addEventListener('change', function () {
+            if (!inputBerkas.files || !inputBerkas.files[0]) return;
+            var file = inputBerkas.files[0];
+            statusUnggah.innerHTML = '<span class="text-mute">Mengunggah ' + file.name + '…</span>';
+
+            var formData = new FormData();
+            formData.append('berkas', file);
+
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            fetch('{{ route("media.upload") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.ok && res.media) {
+                    statusUnggah.innerHTML = '<span class="text-success" style="color:var(--green-600)">✓ ' + res.pesan + '</span>';
+                    mediaTerpilih = res.media.path;
+                    pilihBtn.disabled = false;
+                    muatDaftarMedia();
+                    setTimeout(function () { aktifkanTab('tab-pustaka'); }, 800);
+                } else {
+                    statusUnggah.innerHTML = '<span class="text-danger" style="color:var(--red-600)">✗ ' + (res.pesan || 'Unggah gagal.') + '</span>';
+                }
+            })
+            .catch(function (err) {
+                statusUnggah.innerHTML = '<span class="text-danger" style="color:var(--red-600)">✗ Galat jaringan: ' + err.message + '</span>';
+            });
+        });
+
+        // Insert from URL
+        btnPratinjauUrl.addEventListener('click', function () {
+            var url = inputUrl.value.trim();
+            if (!url) return;
+            imgPratinjauUrl.src = url;
+            wadahPratinjauUrl.style.display = 'block';
+            mediaTerpilih = url;
+            pilihBtn.disabled = false;
+        });
+
+        inputUrl.addEventListener('input', function () {
+            var url = inputUrl.value.trim();
+            if (url) {
+                mediaTerpilih = url;
+                pilihBtn.disabled = false;
+            } else {
+                wadahPratinjauUrl.style.display = 'none';
+                pilihBtn.disabled = true;
+            }
+        });
+
+        // Terapkan pilihan ke input form target
+        pilihBtn.addEventListener('click', function () {
+            if (!mediaTerpilih || targetSlotIndex === null) return;
+            var inputTarget = document.getElementById('input-bg-' + targetSlotIndex);
+            if (inputTarget) {
+                inputTarget.value = mediaTerpilih;
+            }
+            tutupModal();
         });
     })();
 </script>

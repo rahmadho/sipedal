@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KlaimController;
 use App\Http\Controllers\MasterController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PerencanaanController;
 use App\Http\Controllers\RealisasiController;
 use App\Http\Controllers\ReportController;
@@ -60,6 +61,10 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
     Route::post('/setting/scheduler', [SettingController::class, 'simpanScheduler'])->name('setting.scheduler.simpan');
     Route::get('/setting/profile', [SettingController::class, 'profile'])->name('setting.profile');
     Route::post('/setting/profile', [SettingController::class, 'simpanProfile'])->name('setting.profile.simpan');
+
+    /* ---------------- Media Manager ---------------- */
+    Route::get('/media/list', [MediaController::class, 'index'])->name('media.list');
+    Route::post('/media/upload', [MediaController::class, 'upload'])->name('media.upload');
 
     /* ---------------- Pratinjau tema (khusus Super Admin) ---------------- */
     Route::get('/pratinjau-tema/{tema}', function (string $tema) {
