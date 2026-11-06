@@ -449,7 +449,7 @@
                     </div>
 
                     {{-- Card Status Device & Scan QR --}}
-                    <div class="card" style="border:1px solid var(--border);background:var(--surface);margin-bottom:20px">
+                    <div class="card" id="wa-card-pairing" style="border:1px solid var(--border);background:var(--surface);margin-bottom:20px;display:{{ ($waConfig['provider'] ?? 'baileys') === 'baileys' ? 'block' : 'none' }}">
                         <div class="card__body" style="padding:16px">
                             <div class="row-between wrap gap-3" style="align-items:center">
                                 <div>
@@ -786,7 +786,25 @@
         var wadahQr = document.getElementById('wadah-wa-qr');
         var imgQr = document.getElementById('img-wa-qr');
 
-        var qrPollTimer = null;
+        var selectProvider = document.getElementById('wa-provider');
+        var inputEndpoint = document.getElementById('wa-endpoint-url');
+        var cardPairing = document.getElementById('wa-card-pairing');
+
+        if (selectProvider) {
+            selectProvider.addEventListener('change', function () {
+                var prov = selectProvider.value;
+                if (cardPairing) {
+                    cardPairing.style.display = (prov === 'baileys') ? 'block' : 'none';
+                }
+                if (prov === 'fonnte' && (!inputEndpoint.value || inputEndpoint.value.includes('8090') || inputEndpoint.value.includes('localhost'))) {
+                    inputEndpoint.value = 'https://api.fonnte.com/send';
+                } else if (prov === 'wablas' && (!inputEndpoint.value || inputEndpoint.value.includes('8090') || inputEndpoint.value.includes('localhost'))) {
+                    inputEndpoint.value = 'https://tegal.wablas.com/api/send-message';
+                } else if (prov === 'baileys' && (!inputEndpoint.value || inputEndpoint.value.includes('fonnte') || inputEndpoint.value.includes('wablas'))) {
+                    inputEndpoint.value = 'http://127.0.0.1:8090';
+                }
+            });
+        }
 
         function cekStatusWa() {
             fetch('{{ route("setting.pengaturan.whatsapp.status") }}')

@@ -148,13 +148,39 @@ class WhatsAppGateway
         }
 
         try {
-            if ($cfg['provider'] === 'baileys' || str_contains($baseUrl, '8090')) {
+            $provider = strtolower($cfg['provider'] ?? 'baileys');
+
+            if ($provider === 'baileys' || str_contains($baseUrl, '8090')) {
+                // 1. Baileys Self-Hosted Gateway (Local Port 8090)
                 $payload = [
                     'to' => $target,
                     'text' => $pesan,
                 ];
                 $resp = Http::timeout(15)->post("{$baseUrl}/v1/messages", $payload);
+            } elseif ($provider === 'fonnte') {
+                // 2. Fonnte Gateway API
+                $url = str_ends_with($baseUrl, '/send') ? $baseUrl : "{$baseUrl}/send";
+                $headers = [
+                    'Authorization' => $cfg['api_key'],
+                ];
+                $payload = [
+                    'target' => $target,
+                    'message' => $pesan,
+                ];
+                $resp = Http::withHeaders($headers)->timeout(15)->post($url, $payload);
+            } elseif ($provider === 'wablas') {
+                // 3. Wablas Gateway API
+                $url = str_ends_with($baseUrl, '/api/send-message') ? $baseUrl : "{$baseUrl}/api/send-message";
+                $headers = [
+                    'Authorization' => $cfg['api_key'],
+                ];
+                $payload = [
+                    'phone' => $target,
+                    'message' => $pesan,
+                ];
+                $resp = Http::withHeaders($headers)->timeout(15)->post($url, $payload);
             } else {
+                // 4. Custom REST API / Generic Gateway
                 $headers = ['Content-Type' => 'application/json'];
                 if (!empty($cfg['api_key'])) {
                     $headers['Authorization'] = $cfg['api_key'];
@@ -173,7 +199,7 @@ class WhatsAppGateway
 
                 $resp = Http::withHeaders($headers)
                     ->timeout(15)
-                    ->post($baseUrl . '/v1/messages', $payload);
+                    ->post($baseUrl . (str_contains($baseUrl, '/send') || str_contains($baseUrl, '/messages') ? '' : '/v1/messages'), $payload);
             }
 
             if ($resp->successful()) {
