@@ -208,11 +208,15 @@ export function createBaileysProvider(config = {}) {
       socket = makeWASocket({
         version,
         auth: state,
-        printQRInTerminal: false, // we render it ourselves (console HTTP + terminal)
-        browser: Browsers?.ubuntu?.(botName) || ["CuciKu", "Chrome", "1.0.0"],
+        printQRInTerminal: false,
+        browser: Browsers.macOS("Chrome"),
         logger: pino({ level: config.logLevel || "warn" }),
         markOnlineOnConnect: false,
         syncFullHistory: false,
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000,
+        qrTimeout: 40000,
       });
 
       socket.ev.on("creds.update", saveCreds);
