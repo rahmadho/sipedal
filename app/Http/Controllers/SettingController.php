@@ -111,6 +111,11 @@ class SettingController extends Controller
             ], 422);
         }
 
+        // Tambahkan opsi --no-interaction secara default saat dieksekusi via Web
+        if (!str_contains($inputCmd, '--no-interaction')) {
+            $inputCmd .= ' --no-interaction';
+        }
+
         try {
             $exitCode = \Illuminate\Support\Facades\Artisan::call($inputCmd);
             $output = \Illuminate\Support\Facades\Artisan::output();

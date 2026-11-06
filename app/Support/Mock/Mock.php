@@ -666,8 +666,8 @@ class Mock
     public static function command(): array
     {
         return [
-            ['nama' => 'inaproc:pull', 'ket' => 'Menarik data seluruh endpoint aktif untuk satu KLPD.', 'args' => '--klpd=D462 --tahun=2026', 'bahaya' => 'berat'],
-            ['nama' => 'inaproc:pull --endpoint', 'ket' => 'Menarik satu endpoint saja, berguna untuk uji cepat.', 'args' => '--klpd=D462 --endpoint=rup-paket-penyedia', 'bahaya' => 'ringan'],
+            ['nama' => 'inaproc:pull', 'ket' => 'Menarik data seluruh endpoint aktif untuk satu KLPD.', 'args' => '--klpd=D462 --tahun=2026 --sync', 'bahaya' => 'berat'],
+            ['nama' => 'inaproc:pull', 'ket' => 'Menarik satu endpoint saja secara langsung (sinkron).', 'args' => '--klpd=D462 --tahun=2026 --endpoint=paket-penyedia --sync', 'bahaya' => 'ringan'],
             ['nama' => 'inaproc:probe', 'ket' => 'Memeriksa ketersediaan endpoint tanpa menyimpan data.', 'args' => '--klpd=D462', 'bahaya' => 'ringan'],
             ['nama' => 'inaproc:validate-tokens', 'ket' => 'Menguji seluruh token KLPD terhadap endpoint acuan.', 'args' => '--tahun=2026', 'bahaya' => 'ringan'],
             ['nama' => 'inaproc:build-realisasi', 'ket' => 'Menghitung ulang realisasi RUP dari data mentah.', 'args' => '', 'bahaya' => 'berat'],

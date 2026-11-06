@@ -80,6 +80,10 @@ class InaprocPullCommand extends Command
         $tahun = $this->option('tahun');
 
         if ($tahun === null || $tahun === '') {
+            if ($this->option('no-interaction') || ! defined('STDIN')) {
+                return (int) now()->year;
+            }
+
             $tahun = $this->ask('Tahun anggaran', (string) now()->year);
         }
 
@@ -169,7 +173,7 @@ class InaprocPullCommand extends Command
 
     private function confirmRun(): bool
     {
-        if ($this->option('no-interaction')) {
+        if ($this->option('no-interaction') || ! defined('STDIN')) {
             return true;
         }
 
