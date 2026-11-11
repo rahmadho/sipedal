@@ -15,7 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(EndpointSeeder::class);
+        $this->call([
+            EndpointSeeder::class,
+            KlpdSeeder::class,
+        ]);
 
         User::factory()->create([
             'name' => 'Test User',

@@ -38,6 +38,7 @@ Route::middleware(['tenant', 'auth.demo'])->group(function () {
 
     /* ---------------- Master ---------------- */
     Route::get('/master/klpd', [MasterController::class, 'klpd'])->name('master.klpd');
+    Route::post('/master/klpd/tema', [MasterController::class, 'simpanTemaKlpd'])->name('master.klpd.tema');
     Route::get('/master/satker', [MasterController::class, 'satker'])->name('master.satker');
 
     /* ---------------- Report ---------------- */
