@@ -65,7 +65,28 @@ class SchedulerConfig
             if (!is_array($data)) {
                 return self::default();
             }
-            return array_replace_recursive(self::default(), $data);
+
+            $merged = self::default();
+            if (isset($data['enabled'])) {
+                $merged['enabled'] = (bool) $data['enabled'];
+            }
+            if (!empty($data['updated_at'])) {
+                $merged['updated_at'] = $data['updated_at'];
+            }
+
+            if (isset($data['jobs']) && is_array($data['jobs'])) {
+                foreach ($merged['jobs'] as $key => $defaultJob) {
+                    if (isset($data['jobs'][$key]) && is_array($data['jobs'][$key])) {
+                        $savedJob = $data['jobs'][$key];
+                        $merged['jobs'][$key]['enabled'] = isset($savedJob['enabled']) ? (bool) $savedJob['enabled'] : $defaultJob['enabled'];
+                        if (isset($savedJob['times']) && is_array($savedJob['times'])) {
+                            $merged['jobs'][$key]['times'] = array_values($savedJob['times']);
+                        }
+                    }
+                }
+            }
+
+            return $merged;
         } catch (\Throwable) {
             return self::default();
         }
