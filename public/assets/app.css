@@ -725,7 +725,8 @@ table { border-collapse: collapse; width: 100%; }
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
+    scroll-margin-top: calc(var(--topbar-h) + 16px);
 }
 .card__head {
     padding: 15px 18px;

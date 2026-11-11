@@ -259,9 +259,9 @@
                     </div>
                     <div class="head-aksi">
                         <label class="switch" title="Aktifkan atau matikan penjadwal otomatis secara menyeluruh">
-                            <input type="checkbox" name="scheduler_enabled" value="1" @checked($scheduler['enabled'] ?? false)>
+                            <input type="checkbox" id="master-scheduler-toggle" name="scheduler_enabled" value="1" @checked($scheduler['enabled'] ?? false)>
                             <span class="switch__track"></span>
-                            <span class="fw-600 text-sm">Master Scheduler {{ ($scheduler['enabled'] ?? false) ? 'ON' : 'OFF' }}</span>
+                            <span class="fw-600 text-sm" id="master-scheduler-label">Master Scheduler {{ ($scheduler['enabled'] ?? false) ? 'ON' : 'OFF' }}</span>
                         </label>
                     </div>
                 </div>
@@ -298,9 +298,9 @@
                                             <div class="text-xs text-mute">{{ $job['desc'] }}</div>
                                         </div>
                                         <label class="switch">
-                                            <input type="checkbox" name="jobs[{{ $kunciJob }}][enabled]" value="1" @checked($job['enabled'])>
+                                            <input type="checkbox" class="js-job-toggle" name="jobs[{{ $kunciJob }}][enabled]" value="1" @checked($job['enabled'])>
                                             <span class="switch__track"></span>
-                                            <span class="text-xs fw-500">{{ $job['enabled'] ? 'Aktif' : 'Nonaktif' }}</span>
+                                            <span class="text-xs fw-500 js-job-label">{{ $job['enabled'] ? 'Aktif' : 'Nonaktif' }}</span>
                                         </label>
                                     </div>
 
@@ -1106,6 +1106,65 @@
             }
             tutupModal();
         });
+    })();
+
+    // ---------- Interaktivitas Tab & Navigasi Pengaturan ----------
+    (function () {
+        var navItems = document.querySelectorAll('.grid-1-2 .nav-item');
+        var masterToggle = document.getElementById('master-scheduler-toggle');
+        var masterLabel = document.getElementById('master-scheduler-label');
+
+        if (masterToggle && masterLabel) {
+            masterToggle.addEventListener('change', function () {
+                masterLabel.textContent = 'Master Scheduler ' + (masterToggle.checked ? 'ON' : 'OFF');
+            });
+        }
+
+        document.querySelectorAll('.js-job-toggle').forEach(function (toggle) {
+            toggle.addEventListener('change', function () {
+                var parent = toggle.closest('.row-between');
+                var lbl = parent ? parent.querySelector('.js-job-label') : null;
+                if (lbl) {
+                    lbl.textContent = toggle.checked ? 'Aktif' : 'Nonaktif';
+                }
+            });
+        });
+
+        function updateNavAktif(targetId) {
+            navItems.forEach(function (a) {
+                var href = a.getAttribute('href');
+                if (href === '#' + targetId) {
+                    a.style.background = 'var(--brand-50)';
+                    a.style.color = 'var(--brand-700)';
+                    a.style.fontWeight = '600';
+                } else {
+                    a.style.background = 'transparent';
+                    a.style.color = 'var(--text-soft)';
+                    a.style.fontWeight = 'normal';
+                }
+            });
+        }
+
+        navItems.forEach(function (a) {
+            a.addEventListener('click', function () {
+                var href = a.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    updateNavAktif(href.substring(1));
+                }
+            });
+        });
+
+        // Sinkronisasi saat load atau hash berubah
+        if (location.hash && location.hash.length > 1) {
+            var target = location.hash.substring(1);
+            updateNavAktif(target);
+            var el = document.getElementById(target);
+            if (el) {
+                setTimeout(function () {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
     })();
 </script>
 @endpush

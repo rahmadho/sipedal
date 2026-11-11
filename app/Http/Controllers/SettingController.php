@@ -232,7 +232,7 @@ class SettingController extends Controller
             'bahasa' => $data['bahasa'],
         ]);
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan umum dan bahasa berhasil disimpan.');
+        return redirect()->to(route('setting.pengaturan') . '#umum')->with('status', 'Pengaturan umum dan bahasa berhasil disimpan.');
     }
 
     public function simpanTampilan(Request $request)
@@ -266,7 +266,7 @@ class SettingController extends Controller
             }
         }
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan tampilan dan latar login berhasil disimpan.');
+        return redirect()->to(route('setting.pengaturan') . '#tampilan')->with('status', 'Pengaturan tampilan dan latar login berhasil disimpan.');
     }
 
     public function simpanData(Request $request)
@@ -286,7 +286,7 @@ class SettingController extends Controller
         \App\Models\AppSetting::set('ambang_basi_jam', $data['ambang_basi_jam'], $kdKlpd);
         \App\Models\AppSetting::set('batas_ekspor', $data['batas_ekspor'], $kdKlpd);
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan data & sinkronisasi berhasil disimpan.');
+        return redirect()->to(route('setting.pengaturan') . '#data')->with('status', 'Pengaturan data & sinkronisasi berhasil disimpan.');
     }
 
     public function simpanToken(Request $request)
@@ -320,10 +320,10 @@ class SettingController extends Controller
         }
 
         if ($updatedCount > 0) {
-            return redirect()->route('setting.pengaturan')->with('status', "Berhasil memperbarui token untuk {$updatedCount} KLPD.");
+            return redirect()->to(route('setting.pengaturan') . '#token')->with('status', "Berhasil memperbarui token untuk {$updatedCount} KLPD.");
         }
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Tidak ada token yang diperbarui (isian kosong).');
+        return redirect()->to(route('setting.pengaturan') . '#token')->with('status', 'Tidak ada token yang diperbarui (isian kosong).');
     }
 
     public function simpanWhatsApp(Request $request)
@@ -355,7 +355,7 @@ class SettingController extends Controller
         \App\Models\AppSetting::set('wa_notif_sync_selesai', $request->boolean('wa_notif_sync_selesai') ? '1' : '0', $kdKlpd);
         \App\Models\AppSetting::set('wa_notif_sync_gagal', $request->boolean('wa_notif_sync_gagal') ? '1' : '0', $kdKlpd);
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan WhatsApp Gateway berhasil disimpan.');
+        return redirect()->to(route('setting.pengaturan') . '#whatsapp')->with('status', 'Pengaturan WhatsApp Gateway berhasil disimpan.');
     }
 
     public function statusWhatsApp(Request $request)
@@ -449,19 +449,31 @@ class SettingController extends Controller
         $config['enabled'] = $request->boolean('scheduler_enabled');
 
         $jobsInput = $request->input('jobs', []);
+        $formatGalat = [];
+
         foreach ($config['jobs'] as $key => &$job) {
             $jobEnabled = !empty($jobsInput[$key]['enabled']);
             $job['enabled'] = $jobEnabled;
 
-            $timesRaw = $jobsInput[$key]['times'] ?? '';
-            $timesList = array_filter(array_map('trim', explode(',', (string) $timesRaw)));
+            $timesRaw = trim((string) ($jobsInput[$key]['times'] ?? ''));
+            if ($timesRaw === '') {
+                continue;
+            }
 
-            // Validasi format jam HH:MM
+            $timesList = array_filter(array_map('trim', explode(',', $timesRaw)));
             $validTimes = [];
+
             foreach ($timesList as $t) {
-                if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $t)) {
-                    $validTimes[] = $t;
+                // Normalisasi satu digit jam: 4:00 -> 04:00
+                if (preg_match('/^(\d{1,2}):(\d{2})$/', $t, $m)) {
+                    $jam = (int) $m[1];
+                    $menit = (int) $m[2];
+                    if ($jam >= 0 && $jam <= 23 && $menit >= 0 && $menit <= 59) {
+                        $validTimes[] = sprintf('%02d:%02d', $jam, $menit);
+                        continue;
+                    }
                 }
+                $formatGalat[] = "Format jam '{$t}' pada {$job['label']} tidak valid (gunakan format HH:MM).";
             }
 
             if (!empty($validTimes)) {
@@ -472,7 +484,13 @@ class SettingController extends Controller
 
         \App\Support\SchedulerConfig::save($config);
 
-        return redirect()->route('setting.pengaturan')->with('status', 'Pengaturan jadwal otomatis berhasil disimpan.');
+        if (!empty($formatGalat)) {
+            return redirect()->to(route('setting.pengaturan') . '#scheduler')
+                ->with('status', 'Sebagian pengaturan berhasil disimpan.')
+                ->with('galat', implode(' ', $formatGalat));
+        }
+
+        return redirect()->to(route('setting.pengaturan') . '#scheduler')->with('status', 'Pengaturan jadwal otomatis berhasil disimpan.');
     }
 
     public function profile()
