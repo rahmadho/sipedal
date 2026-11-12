@@ -1,0 +1,104 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sipedal_testing
+          POSTGRES_USER: sipedal
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql, pgsql, bcmath, gd, zip
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies & Build Assets
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Cache Composer Dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Test Suite
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sipedal_testing
+          DB_USERNAME: sipedal
+          DB_PASSWORD: password
+          APP_KEY: base64:m1a0G57oBfZpLg64Ld5n21U6yM/6gG43K2d9h0m8xN4=
+        run: ./vendor/bin/phpunit
+
+  deploy:
+    name: Redeploy via SSH
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Remote Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            DEPLOY_PATH="${{ secrets.SERVER_DEPLOY_PATH || '/var/www/sipedal' }}"
+            cd "$DEPLOY_PATH"
+
+            echo " Pulling latest changes from git..."
+            git pull origin main
+
+            echo " Building & restarting Docker containers..."
+            docker compose build --pull
+            docker compose up -d --remove-orphans
+
+            echo " Running database migrations..."
+            docker compose exec -T app php artisan migrate --force
+
+            echo " Optimizing Laravel cache..."
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan config:cache
+            docker compose exec -T app php artisan route:cache
+            docker compose exec -T app php artisan view:cache
+
+            echo " Deployment successful!"

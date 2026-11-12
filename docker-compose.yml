@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sipedal-app:latest
+    container_name: sipedal_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-sipedal_new}
+      DB_USERNAME: ${DB_USERNAME:-sipedal}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      - wa-gateway
+
+  wa-gateway:
+    build:
+      context: ./wa-gateway
+      dockerfile: Dockerfile
+      args:
+        WA_WITH_DEPS: "true"
+    image: sipedal-wa-gateway:latest
+    container_name: sipedal_wa_gateway
+    restart: unless-stopped
+    ports:
+      - "${WA_PORT:-8090}:8090"
+    environment:
+      PORT: 8090
+      WA_PROVIDER: baileys
+      WA_BAILEYS_BOT_NAME: Sipedal
+      WA_BAILEYS_AUTH_DIR_DEFAULT: /data/wa-auth
+    volumes:
+      - wa_auth:/data/wa-auth
+
+volumes:
+  app_storage:
+  wa_auth:
