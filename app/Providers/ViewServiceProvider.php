@@ -21,16 +21,7 @@ class ViewServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $peran = session('peran');
             $rupStkId = session('rup_stk_id');
-            $namaSatker = null;
-
-            if ($rupStkId) {
-                foreach (\App\Support\Mock\SatkerPilihan::semua() as $s) {
-                    if ((int) $s['nilai'] === (int) $rupStkId) {
-                        $namaSatker = $s['label'];
-                        break;
-                    }
-                }
-            }
+            $namaSatker = $rupStkId ? \App\Support\Mock\SatkerPilihan::nama((int) $rupStkId) : null;
 
             $bisaLintasKlpd = in_array($peran, ['super_admin'], true);
             $sesiKdKlpd = session('kd_klpd', app(Tenant::class)->kode());

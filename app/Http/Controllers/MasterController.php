@@ -85,20 +85,74 @@ class MasterController extends Controller
     {
         $halaman = max(1, (int) $request->query('halaman', 1));
         $perHalaman = 40;
-        $offset = ($halaman - 1) * $perHalaman;
+        $cari = trim((string) $request->query('cari', ''));
+        $jenis = trim((string) $request->query('jenis', ''));
 
-        $baris = Mock::satker($perHalaman, $offset);
+        $kdKlpd = strtoupper((string) session('kd_klpd', app(\App\Support\Tenant::class)->kode()));
+        $tahun = (int) session('tahun', (int) date('Y'));
+
+        // Ambil data satker ril dari DB
+        $semua = \App\Support\SatkerRepository::daftarLengkap($kdKlpd, $tahun);
+        $pakaiDataRil = !empty($semua);
+
+        // Fallback ke mock hanya bila DB belum punya data sama sekali (mis. pada environment test)
+        if (!$pakaiDataRil) {
+            $semua = Mock::satker(Mock::ACUAN['satker'], 0);
+        }
 
         // Peran yang terikat satu satuan kerja hanya melihat satkernya.
         if (SatkerFilter::berlakunya($request->session()->all())) {
-            $baris = SatkerFilter::terapkan($baris, (int) $request->session()->get('rup_stk_id'));
+            $semua = SatkerFilter::terapkan($semua, (int) $request->session()->get('rup_stk_id'));
         }
+
+        // Filter pencarian
+        if ($cari !== '') {
+            $q = mb_strtolower($cari);
+            $semua = array_values(array_filter($semua, static function (array $b) use ($q): bool {
+                return str_contains(mb_strtolower((string) ($b['nama'] ?? '')), $q)
+                    || str_contains(mb_strtolower((string) ($b['kd_satker'] ?? '')), $q)
+                    || str_contains(mb_strtolower((string) ($b['kd_satker_str'] ?? '')), $q);
+            }));
+        }
+
+        // Filter jenis
+        if ($jenis !== '') {
+            $semua = array_values(array_filter($semua, static function (array $b) use ($jenis): bool {
+                return strcasecmp((string) ($b['jenis'] ?? ''), $jenis) === 0;
+            }));
+        }
+
+        // Hitung KPI dari seluruh data terfilter
+        $total = count($semua);
+        $totalPagu = (int) array_sum(array_column($semua, 'pagu'));
+        $totalRealisasi = (int) array_sum(array_column($semua, 'realisasi'));
+        $totalPaket = (int) array_sum(array_column($semua, 'paket'));
+        $rataSerapan = $totalPagu > 0
+            ? round(($totalRealisasi / $totalPagu) * 100, 1)
+            : 0.0;
+
+        // Paginasi
+        $offset = ($halaman - 1) * $perHalaman;
+        $baris = array_slice($semua, $offset, $perHalaman);
+        foreach ($baris as $idx => &$item) {
+            $item['no'] = $offset + $idx + 1;
+        }
+        unset($item);
 
         return view('master.satker', [
             'baris' => $baris,
             'halaman' => $halaman,
             'perHalaman' => $perHalaman,
-            'total' => count($baris) === $perHalaman ? Mock::ACUAN['satker'] : count($baris),
+            'total' => $total,
+            'totalPagu' => $totalPagu,
+            'totalRealisasi' => $totalRealisasi,
+            'totalPaket' => $totalPaket,
+            'rataSerapan' => $rataSerapan,
+            'cari' => $cari,
+            'jenisTerpilih' => $jenis,
+            'jenisOpsi' => \App\Support\SatkerRepository::JENIS_OPSI,
+            'kdKlpd' => $kdKlpd,
+            'tahun' => $tahun,
         ]);
     }
 

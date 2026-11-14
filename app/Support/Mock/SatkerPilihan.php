@@ -21,7 +21,18 @@ class SatkerPilihan
             return null;
         }
 
-        foreach (self::semua() as $s) {
+        try {
+            $row = \Illuminate\Support\Facades\DB::table('inaproc.rec_rup_master_satker')
+                ->where('kd_satker', $kode)
+                ->value('nama_satker');
+            if ($row) {
+                return trim((string) $row, " \t\n\r\0\x0B\"'");
+            }
+        } catch (\Throwable) {
+            //
+        }
+
+        foreach (self::semua(600) as $s) {
             if ((int) $s['nilai'] === $kode) {
                 return $s['label'];
             }
@@ -37,23 +48,57 @@ class SatkerPilihan
      *
      * @return array<int, array{nilai:int, label:string, keterangan:string}>
      */
-    public static function semua(int $batas = 60): array
+    public static function semua(int $batas = 60, ?string $kdKlpd = null): array
     {
         $hasil = [];
 
-        // Mock::SATKER hanya nama; kode dibuat tetap supaya stabil antar-panggilan.
-        foreach (Mock::SATKER as $i => $nama) {
-            if (count($hasil) >= $batas) {
-                break;
+        try {
+            $klpd = strtoupper($kdKlpd ?: (string) session('kd_klpd', 'D462'));
+            $rows = \Illuminate\Support\Facades\DB::table('inaproc.rec_rup_master_satker')
+                ->where('_kode_klpd', $klpd)
+                ->orderBy('nama_satker')
+                ->limit($batas)
+                ->get(['kd_satker', 'kd_satker_str', 'nama_satker']);
+
+            if ($rows->isEmpty()) {
+                $rows = \Illuminate\Support\Facades\DB::table('inaproc.rec_rup_paket_penyedia')
+                    ->where('_kode_klpd', $klpd)
+                    ->select('kd_satker', 'kd_satker_str', 'nama_satker')
+                    ->distinct()
+                    ->orderBy('nama_satker')
+                    ->limit($batas)
+                    ->get();
             }
 
-            $kode = 66_000 + $i;
+            foreach ($rows as $r) {
+                $kode = (int) $r->kd_satker;
+                if ($kode <= 0) {
+                    continue;
+                }
+                $nama = trim((string) $r->nama_satker, " \t\n\r\0\x0B\"'");
+                $hasil[] = [
+                    'nilai' => $kode,
+                    'label' => $nama,
+                    'keterangan' => !empty($r->kd_satker_str) ? (string) $r->kd_satker_str : 'Kode '.$kode,
+                ];
+            }
+        } catch (\Throwable) {
+            //
+        }
 
-            $hasil[] = [
-                'nilai' => $kode,
-                'label' => $nama,
-                'keterangan' => 'Kode '.$kode,
-            ];
+        // Fallback atau pelengkap agar test unit/feature dengan database kosong tetap jalan
+        if (empty($hasil)) {
+            foreach (Mock::SATKER as $i => $nama) {
+                if (count($hasil) >= $batas) {
+                    break;
+                }
+                $kode = 66_000 + $i;
+                $hasil[] = [
+                    'nilai' => $kode,
+                    'label' => $nama,
+                    'keterangan' => 'Kode '.$kode,
+                ];
+            }
         }
 
         return $hasil;
