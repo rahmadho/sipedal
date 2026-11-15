@@ -18,6 +18,5 @@ storage/logs/*
 .env.*
 .phpunit.result.cache
 tests
-docker
 wa-gateway/.wa-auth
 wa-gateway/node_modules
