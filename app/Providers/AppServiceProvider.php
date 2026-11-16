@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Ponytail: fallback tenant jika ResolveTenant middleware belum sempat jalan (mis. saat error handler render view).
+        $this->app->singleton(\App\Support\Tenant::class, function () {
+            return \App\Support\Tenant::dariKunci(config('sipedal.default_tenant', 'd462'));
+        });
     }
 
     /**
