@@ -444,9 +444,12 @@ class RupRepository
                 $q->whereNull('p.status_delete_rup')->orWhere('p.status_delete_rup', 0)->orWhere('p.status_delete_rup', '0');
             });
 
-        // Filter Satker
+        // Filter Satker (Mendukung Multi-Select Array atau Nilai Tunggal)
         if (! empty($filters['satker'])) {
-            $query->where('p.kd_satker', (int) $filters['satker']);
+            $satkerList = is_array($filters['satker']) ? array_filter($filters['satker']) : [$filters['satker']];
+            if (! empty($satkerList)) {
+                $query->whereIn('p.kd_satker', array_map('intval', $satkerList));
+            }
         }
 
         // Filter Cari
@@ -608,9 +611,12 @@ class RupRepository
                 $q->whereNull('s.status_delete_rup')->orWhere('s.status_delete_rup', 0)->orWhere('s.status_delete_rup', '0');
             });
 
-        // Filter Satker
+        // Filter Satker (Mendukung Multi-Select Array atau Nilai Tunggal)
         if (! empty($filters['satker'])) {
-            $query->where('s.kd_satker', (int) $filters['satker']);
+            $satkerList = is_array($filters['satker']) ? array_filter($filters['satker']) : [$filters['satker']];
+            if (! empty($satkerList)) {
+                $query->whereIn('s.kd_satker', array_map('intval', $satkerList));
+            }
         }
 
         // Filter Cari

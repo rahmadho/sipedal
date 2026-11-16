@@ -320,17 +320,17 @@
             <x-slot:filter>
                 <input type="hidden" name="tabel" value="paket">
 
-                {{-- Filter Satker --}}
-                <div class="field" style="display:flex;flex-direction:column;gap:4px">
+                {{-- Filter Satker Combobox dengan Filter Pencarian & Multi-Select --}}
+                <div class="field" style="display:flex;flex-direction:column;gap:4px;min-width:240px;max-width:300px">
                     <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Satker</label>
-                    <select name="satker" class="input input-sm" style="max-width:240px;height:32px">
-                        <option value="">Semua Satuan Kerja</option>
-                        @foreach ($satkerPilihan as $stk)
-                            <option value="{{ $stk['nilai'] }}" @selected($filters['satker'] == $stk['nilai'])>
-                                {{ $stk['label'] }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-combobox
+                        name="satker"
+                        :options="$satkerPilihan"
+                        :selected="$filters['satker']"
+                        :multiple="true"
+                        placeholder="Semua Satuan Kerja"
+                        cari="Cari satuan kerja..."
+                    />
                 </div>
 
                 {{-- Filter Khusus Tab Penyedia --}}

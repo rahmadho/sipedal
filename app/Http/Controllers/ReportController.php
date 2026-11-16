@@ -99,9 +99,14 @@ class ReportController extends Controller
         $perHalaman = max(5, min(100, (int) $request->query('per_halaman', 25)));
         $offset = ($halaman - 1) * $perHalaman;
 
+        $satkerInput = $satkerId ?: $request->input('satker');
+        if (is_string($satkerInput) && str_contains($satkerInput, ',')) {
+            $satkerInput = explode(',', $satkerInput);
+        }
+
         $filters = [
             'cari' => trim((string) $request->query('cari', '')),
-            'satker' => $satkerId ?: $request->query('satker'),
+            'satker' => $satkerInput,
             'sort' => (string) $request->query('sort', 'kd_rup'),
             'arah' => strtolower((string) $request->query('arah', 'desc')) === 'asc' ? 'asc' : 'desc',
             'tipe_paket' => $request->query('tipe_paket'),

@@ -1,5 +1,5 @@
 {{--
-    Combobox: select yang bisa dicari.
+    Combobox: select yang bisa dicari dengan filter dan dukungan multi-select.
 
     Sumber kebenaran adalah <select> native di dalam komponen ini. JavaScript
     membangun antarmuka pencarian di atasnya, jadi tanpa JavaScript pilihan
@@ -7,8 +7,7 @@
 
     Pemakaian:
     <x-combobox name="jenis" label="Jenis" :options="['a' => 'Dinas']" />
-    <x-combobox name="satker" :options="$satker" kosong="Pilih satuan kerja"
-                :keterangan="true" :wajib="true" hint="..." />
+    <x-combobox name="satker" :options="$satker" :multiple="true" placeholder="Pilih Satuan Kerja..." />
 --}}
 @props([
     'name' => '',
@@ -25,11 +24,13 @@
     'keterangan' => false,
     'kelas' => null,
     'disabled' => false,
+    'multiple' => false,
 ])
 
 @php
-    $id = $id ?: $name;
+    $id = $id ?: str_replace(['[', ']'], '', $name);
     $errorId = $id . '-galat';
+    $inputName = $multiple && !str_ends_with($name, '[]') ? $name . '[]' : $name;
     $butir = [];
 
     foreach ($options as $nilai => $opsi) {
@@ -44,7 +45,13 @@
         }
     }
 
-    $terpilih = is_array($selected) ? array_map('strval', $selected) : (string) $selected;
+    if ($multiple) {
+        $terpilih = is_array($selected)
+            ? array_map('strval', $selected)
+            : ($selected !== null && $selected !== '' ? [(string) $selected] : []);
+    } else {
+        $terpilih = is_array($selected) ? (string) (reset($selected) ?: '') : (string) ($selected ?? '');
+    }
 @endphp
 
 <div class="field {{ $kelas }}">
@@ -56,8 +63,9 @@
 
     <select
         class="select js-combobox-asal"
-        name="{{ $name }}"
+        name="{{ $inputName }}"
         id="{{ $id }}"
+        @if ($multiple) multiple data-multi="1" @endif
         @if ($wajib) required @endif
         @if ($disabled) disabled @endif
         @if ($error) aria-invalid="true" aria-describedby="{{ $errorId }}" @endif
@@ -65,14 +73,19 @@
         data-cari="{{ $cari }}"
         data-keterangan="{{ $keterangan ? '1' : '0' }}"
     >
-        @if ($kosong !== null)
+        @if (! $multiple && $kosong !== null)
             <option value="">{{ $kosong }}</option>
         @endif
 
         @foreach ($butir as $o)
+            @php
+                $isAktif = $multiple
+                    ? in_array((string) $o['nilai'], $terpilih, true)
+                    : ((string) $o['nilai'] === (string) $terpilih);
+            @endphp
             <option
                 value="{{ $o['nilai'] }}"
-                @selected($terpilih === $o['nilai'])
+                @selected($isAktif)
                 @if ($o['keterangan']) data-keterangan="{{ $o['keterangan'] }}" @endif
             >{{ $o['label'] }}</option>
         @endforeach

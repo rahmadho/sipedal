@@ -141,7 +141,7 @@
         const params = new URLSearchParams();
         for (const [key, val] of formData.entries()) {
             if (val !== '' && val !== null) {
-                params.set(key, val);
+                params.append(key, val);
             }
         }
 
@@ -249,12 +249,26 @@
     if (btnReset) {
         btnReset.addEventListener('click', function(e) {
             e.preventDefault();
-            form.querySelectorAll('input[type="search"]').forEach(i => i.value = '');
-            form.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-            if (inputSort) inputSort.value = 'kd_rup';
-            if (inputArah) inputArah.value = 'desc';
+            form.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+                if (el.tagName === 'SELECT') {
+                    if (el.multiple) {
+                        Array.from(el.options).forEach(opt => { opt.selected = false; });
+                    } else {
+                        el.selectedIndex = 0;
+                    }
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                } else if (el.type !== 'submit' && el.type !== 'button') {
+                    el.value = '';
+                }
+            });
+            if (inputSort) inputSort.value = @js($sort);
+            if (inputArah) inputArah.value = @js($arah);
             muatData(true);
         });
+    }
+
+    if (window.SipedalCombobox) {
+        window.SipedalCombobox.init(form);
     }
 
     // 7. Tab delegasi jika ada tab di root

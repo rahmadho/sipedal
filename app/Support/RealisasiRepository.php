@@ -88,9 +88,12 @@ class RealisasiRepository
             ->where('kd_klpd', $kdKlpd)
             ->where('tahun_anggaran', $tahun);
 
-        // Filter satuan kerja
+        // Filter satuan kerja (Mendukung Multi-Select Array atau Nilai Tunggal)
         if (!empty($filters['satker'])) {
-            $query->where('kd_satker', (int) $filters['satker']);
+            $satkerList = is_array($filters['satker']) ? array_filter($filters['satker']) : [$filters['satker']];
+            if (!empty($satkerList)) {
+                $query->whereIn('kd_satker', array_map('intval', $satkerList));
+            }
         }
 
         // Filter sumber

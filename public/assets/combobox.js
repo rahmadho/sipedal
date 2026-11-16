@@ -1,5 +1,5 @@
 /*
- * Combobox: select yang bisa dicari.
+ * Combobox: select yang bisa dicari dengan dukungan single dan multi-select.
  *
  * Setiap <select class="js-combobox-asal"> dinaikkan menjadi combobox. Select
  * native tetap jadi sumber kebenaran: nilainya yang terkirim ke server, dan
@@ -10,14 +10,18 @@
 (function () {
     'use strict';
 
-    var URUT = '';
-
     function norm(t) {
         return String(t || '')
             .toLowerCase()
             .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e')
             .replace(/[ìíîï]/g, 'i').replace(/[òóôõö]/g, 'o')
             .replace(/[ùúûü]/g, 'u').replace(/[ç]/g, 'c');
+    }
+
+    function escapeHtml(t) {
+        var div = document.createElement('div');
+        div.textContent = t || '';
+        return div.innerHTML;
     }
 
     function el(tag, cls) {
@@ -32,6 +36,7 @@
 
     function Combobox(select) {
         this.select = select;
+        this.multi = select.multiple || select.hasAttribute('data-multi');
         this.id = uniq();
         this.opsi = [];
         this.tampil = [];
@@ -47,12 +52,13 @@
 
         // Pindahkan select ke tempat tersembunyi agar tetap terkirim.
         var wadah = el('div', 'combobox');
+        if (this.multi) wadah.classList.add('combobox--multi');
         s.parentNode.insertBefore(wadah, s);
         wadah.appendChild(s);
         s.classList.add('combobox__asal');
 
         var opsi = Array.prototype.slice.call(s.querySelectorAll('option'));
-        this.opsi = opsi.map(function (o, i) {
+        this.opsi = opsi.map(function (o) {
             return {
                 nilai: o.value,
                 label: o.textContent.trim(),
@@ -61,8 +67,8 @@
             };
         });
 
-        // Pilihan kosong memakai nilai kosong, jadi yang pertama boleh dibuang.
-        if (this.opsi.length && this.opsi[0].nilai === '' && this.opsi[0].asal.disabled) {
+        // Pilihan kosong nilai "" untuk single select di posisi pertama
+        if (!this.multi && this.opsi.length && this.opsi[0].nilai === '' && this.opsi[0].asal.disabled) {
             this.opsi.shift();
         }
 
@@ -98,12 +104,30 @@
         this.daftar = el('ul', 'combobox__daftar');
         this.daftar.id = this.id + '-daftar';
         this.daftar.setAttribute('role', 'listbox');
+        if (this.multi) this.daftar.setAttribute('aria-multiselectable', 'true');
 
         this.hitung = el('div', 'combobox__hitung');
         this.hitung.setAttribute('aria-live', 'polite');
 
-        this.popup.appendChild(this.hitung);
         this.popup.appendChild(this.cari);
+
+        // Toolbar aksi cepat untuk multi-select (Pilih Semua / Kosongkan)
+        if (this.multi) {
+            this.toolbar = el('div', 'combobox__multi-toolbar');
+            this.btnSemua = el('button', 'combobox__multi-btn');
+            this.btnSemua.type = 'button';
+            this.btnSemua.textContent = 'Pilih Semua';
+
+            this.btnReset = el('button', 'combobox__multi-btn');
+            this.btnReset.type = 'button';
+            this.btnReset.textContent = 'Kosongkan';
+
+            this.toolbar.appendChild(this.btnSemua);
+            this.toolbar.appendChild(this.btnReset);
+            this.popup.appendChild(this.toolbar);
+        }
+
+        this.popup.appendChild(this.hitung);
         this.popup.appendChild(this.daftar);
 
         wadah.appendChild(this.kendali);
@@ -162,7 +186,7 @@
                 e.preventDefault();
                 self.tutup(true);
             } else if (e.key === 'Backspace' && self.cari.value === '') {
-                self.pilih(null);
+                if (!self.multi) self.pilih(null);
             }
         });
 
@@ -172,6 +196,17 @@
             var o = self.opsi[Number(li.getAttribute('data-i'))];
             if (o) self.pilih(o);
         });
+
+        if (this.multi && this.toolbar) {
+            this.btnSemua.addEventListener('click', function (e) {
+                e.stopPropagation();
+                self.pilihSemua();
+            });
+            this.btnReset.addEventListener('click', function (e) {
+                e.stopPropagation();
+                self.kosongkan();
+            });
+        }
 
         document.addEventListener('click', function (e) {
             if (self.terbuka && !self.wadah.contains(e.target)) self.tutup(false);
@@ -205,28 +240,40 @@
         } else {
             this.tampil.forEach(function (o, i) {
                 var li = el('li', 'combobox__opsi');
+                if (self.multi) li.classList.add('combobox__opsi-multi');
                 li.id = self.id + '-opsi-' + i;
                 li.setAttribute('data-i', String(self.opsi.indexOf(o)));
                 li.setAttribute('role', 'option');
-                li.setAttribute('aria-selected', o.nilai === self.select.value ? 'true' : 'false');
-                if (o.nilai === self.select.value) li.classList.add('is-terpilih');
 
+                var isSelected = self.multi ? o.asal.selected : (o.nilai === self.select.value);
+                li.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+                if (isSelected) li.classList.add('is-terpilih');
+
+                // Checkbox visual untuk multi-select
+                if (self.multi) {
+                    var chk = el('span', 'combobox__checkbox');
+                    chk.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+                    li.appendChild(chk);
+                }
+
+                var konten = el('div', 'combobox__konten');
                 var t = el('span', 'combobox__label');
                 t.textContent = o.label;
-                li.appendChild(t);
+                konten.appendChild(t);
 
                 if (o.keterangan) {
                     var d = el('span', 'combobox__keterangan');
                     d.textContent = o.keterangan;
-                    li.appendChild(d);
+                    konten.appendChild(d);
                 }
 
+                li.appendChild(konten);
                 self.daftar.appendChild(li);
             });
         }
 
         var n = this.tampil.length;
-        this.hitung.textContent = n + (n === 1 ? ' pilihan' : ' pilihan');
+        this.hitung.textContent = n + ' pilihan';
         this.hitung.hidden = n === 0;
         this.tandai();
     };
@@ -275,18 +322,64 @@
     };
 
     Combobox.prototype.pilih = function (o) {
-        this.select.value = o ? o.nilai : '';
-        this.select.dispatchEvent(new Event('change', { bubbles: true }));
+        if (this.multi) {
+            if (!o) return;
+            o.asal.selected = !o.asal.selected;
+            this.gambarDaftar();
+            this.sinkronTrigger();
+            this.select.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            this.select.value = o ? o.nilai : '';
+            this.select.dispatchEvent(new Event('change', { bubbles: true }));
+            this.sinkronTrigger();
+            this.tutup(true);
+        }
+    };
+
+    Combobox.prototype.pilihSemua = function () {
+        var target = this.tampil.length ? this.tampil : this.opsi;
+        target.forEach(function (o) {
+            if (o.nilai !== '') o.asal.selected = true;
+        });
+        this.gambarDaftar();
         this.sinkronTrigger();
-        this.tutup(true);
+        this.select.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    Combobox.prototype.kosongkan = function () {
+        this.opsi.forEach(function (o) {
+            o.asal.selected = false;
+        });
+        this.gambarDaftar();
+        this.sinkronTrigger();
+        this.select.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
     Combobox.prototype.sinkronTrigger = function () {
-        var v = this.select.value;
         var ph = this.select.getAttribute('data-placeholder') || 'Pilih…';
-        var o = this.opsi.filter(function (x) { return x.nilai === v; })[0];
-        this.trigger.textContent = o ? o.label : ph;
-        this.trigger.classList.toggle('is-kosong', !o);
+
+        if (this.multi) {
+            var terpilih = this.opsi.filter(function (x) {
+                return x.asal.selected && x.nilai !== '';
+            });
+
+            if (terpilih.length === 0) {
+                this.trigger.innerHTML = escapeHtml(ph);
+                this.trigger.classList.add('is-kosong');
+            } else if (terpilih.length === 1) {
+                this.trigger.innerHTML = escapeHtml(terpilih[0].label);
+                this.trigger.classList.remove('is-kosong');
+            } else {
+                this.trigger.innerHTML = escapeHtml(terpilih[0].label)
+                    + ' <span class="combobox__multi-badge">+' + (terpilih.length - 1) + '</span>';
+                this.trigger.classList.remove('is-kosong');
+            }
+        } else {
+            var v = this.select.value;
+            var o = this.opsi.filter(function (x) { return x.nilai === v; })[0];
+            this.trigger.textContent = o ? o.label : ph;
+            this.trigger.classList.toggle('is-kosong', !o);
+        }
     };
 
     function init(root) {
