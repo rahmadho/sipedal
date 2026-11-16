@@ -185,7 +185,7 @@ class ReportController extends Controller
             'ringkasan' => $ringkasan,
             'rekapSatker' => $rekapSatker,
             'satkerFilters' => $satkerFilters,
-            'cariSatker' => $cariSatker,
+            'cariSatker' => $satkerFilters['cari'],
             'tab' => $tab,
             'baris' => $hasilPaket['items'],
             'total' => $hasilPaket['total'],

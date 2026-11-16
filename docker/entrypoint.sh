@@ -2,7 +2,8 @@
 set -e
 
 # Pastikan permission storage & bootstrap cache aman
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+mkdir -p /var/www/.postgresql
+chown -R www-data:www-data /var/www /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Cache konfigurasi & rute saat container start
