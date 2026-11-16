@@ -108,6 +108,7 @@ class ViewBuilder
                 p.nama_satker,
                 p.metode_pengadaan,
                 p.tahun_anggaran,
+                p.kd_klpd,
                 sp.sumber,
                 CASE WHEN sp.depth = 0 THEN 'langsung' ELSE 'warisan' END AS jenis,
                 sp.dari_rup,

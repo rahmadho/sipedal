@@ -8,29 +8,36 @@
         <div class="page-head__title">
             <h1>Realisasi RUP</h1>
             <p>
-                Paket RUP yang sudah memiliki proses pengadaan, lengkap dengan rantai
-                warisannya. Satu baris mewakili satu proses, bukan satu paket.
+                Paket RUP yang sudah memiliki proses pengadaan berbasis data INAPROC riil, lengkap dengan rantai warisan kaji ulangnya.
             </p>
         </div>
         <div class="page-head__aksi">
-            <button class="btn btn-ghost btn-sm" type="button">
-                <x-ikon nama="download" :ukuran="15" />
-                Ekspor CSV
-            </button>
+            <span class="badge badge--brand" style="padding:6px 12px;font-size:12px">
+                Tahun Anggaran {{ $tahun }} ({{ $kdKlpd }})
+            </span>
         </div>
     </div>
 
     {{-- Komposisi per sumber --}}
-    <div class="grid grid-4" style="margin-bottom:16px">
-        @php
-            $warna = ['#1d4ed8', '#10b981', '#f59e0b', '#a81f45'];
-            $totalBaris = array_sum(array_column($komposisi, 'total'));
-        @endphp
-        @foreach ($komposisi as $i => $k)
+    @php
+        $warna = [
+            'e-katalog' => '#1d4ed8',
+            'tender' => '#10b981',
+            'non-tender' => '#f59e0b',
+            'pencatatan-non-tender' => '#8b5cf6',
+        ];
+        $totalSemua = array_sum(array_column($komposisi, 'total'));
+    @endphp
+    <div class="grid grid-4" style="margin-bottom:20px">
+        @foreach ($komposisi as $k)
+            @php
+                $w = $warna[$k['sumber']] ?? '#6b7280';
+                $persen = $totalSemua > 0 ? round(($k['total'] / $totalSemua) * 100, 1) : 0;
+            @endphp
             <div class="kpi">
                 <div class="kpi__top">
                     <span class="kpi__label">{{ $k['label'] }}</span>
-                    <span class="legend__warna" style="background:{{ $warna[$i % count($warna)] }};width:11px;height:11px"></span>
+                    <span class="legend__warna" style="background:{{ $w }};width:11px;height:11px;border-radius:50%"></span>
                 </div>
                 <div class="kpi__nilai">{{ angka($k['total']) }}</div>
                 <div class="kpi__sub">
@@ -38,127 +45,87 @@
                     <span class="text-xs text-mute">·</span>
                     <span class="text-xs">{{ angka($k['warisan']) }} warisan</span>
                 </div>
+                @if ($k['pagu'] > 0)
+                    <div style="font-size:11px;color:var(--text-mute);margin-top:4px" title="{{ rp($k['pagu']) }}">
+                        Pagu: <strong style="color:var(--text)">{{ ringkas($k['pagu']) }}</strong>
+                    </div>
+                @endif
                 <div class="progres" style="margin-top:10px">
-                    <div class="progres__isi" style="width:{{ round($k['total'] / $totalBaris * 100) }}%;background:{{ $warna[$i % count($warna)] }}"></div>
+                    <div class="progres__isi" style="width:{{ $persen }}%;background:{{ $w }}"></div>
                 </div>
             </div>
         @endforeach
     </div>
 
-    <div class="card">
-        <div class="card__head">
-            <div>
-                <h2>Daftar Realisasi</h2>
-                <p>{{ angka($total) }} baris proses dari {{ angka(\App\Support\Mock\Mock::ACUAN['proses']) }} proses dan {{ angka(\App\Support\Mock\Mock::ACUAN['warisan']) }} warisan</p>
+    {{-- Daftar Realisasi DataTable --}}
+    <div class="card" id="daftar-realisasi">
+        <div class="card__head" style="border-bottom:none;padding-bottom:12px">
+            <div style="flex:1">
+                <h2>Daftar Realisasi RUP</h2>
+                <p>Menampilkan seluruh paket RUP berproses langsung dan hasil kaji ulang (warisan)</p>
             </div>
         </div>
 
-        <form class="toolbar" method="GET" action="{{ route('realisasi') }}">
-            <div class="field field--cari">
-                <label for="cari">Cari paket</label>
-                <div class="input-wrap">
-                    <span class="input-ikon"><x-ikon nama="search" :ukuran="14" /></span>
-                    <input class="input" type="search" id="cari" name="cari" placeholder="Nama paket atau kode RUP" value="{{ request('cari') }}">
+        <x-datatable
+            id="dt-realisasi"
+            :action="route('realisasi')"
+            :cari="$filters['cari']"
+            cari-placeholder="Cari kode RUP, nama paket, atau satker..."
+            :per-halaman="$perHalaman"
+            :per-halaman-opsi="[10, 25, 50, 100]"
+            :halaman="$halaman"
+            :total="$total"
+            :sort="$filters['sort']"
+            :arah="$filters['arah']"
+        >
+            {{-- Filter Kustom Toolbar --}}
+            <x-slot:filter>
+                {{-- Filter Satker --}}
+                <div class="field" style="display:flex;flex-direction:column;gap:4px">
+                    <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Satker</label>
+                    <select name="satker" class="input input-sm" style="max-width:240px;height:32px">
+                        <option value="">Semua Satuan Kerja</option>
+                        @foreach ($satkerPilihan as $stk)
+                            <option value="{{ $stk['nilai'] }}" @selected($filters['satker'] == $stk['nilai'])>
+                                {{ $stk['label'] }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
-            </div>
 
-            <div class="field field--md">
-                <label for="sumber">Sumber</label>
-                <select class="select js-combobox-asal" id="sumber" name="sumber">
-                    <option value="">Semua sumber</option>
-                    @foreach ($sumber as $s)
-                        <option value="{{ $s }}" @selected(request('sumber') === $s)>{{ ucwords(str_replace('-', ' ', $s)) }}</option>
-                    @endforeach
-                </select>
-            </div>
+                {{-- Filter Sumber --}}
+                <div class="field" style="display:flex;flex-direction:column;gap:4px">
+                    <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Sumber</label>
+                    <select name="sumber" class="input input-sm" style="min-width:160px;height:32px">
+                        <option value="">Semua Sumber</option>
+                        @foreach ($sumber as $key => $lbl)
+                            <option value="{{ $key }}" @selected($filters['sumber'] === $key)>
+                                {{ $lbl }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div class="field field--md">
-                <label for="jenis">Jenis</label>
-                <select class="select js-combobox-asal" id="jenis" name="jenis">
-                    <option value="">Langsung & warisan</option>
-                    <option value="langsung" @selected(request('jenis') === 'langsung')>Langsung</option>
-                    <option value="warisan" @selected(request('jenis') === 'warisan')>Warisan</option>
-                </select>
-            </div>
+                {{-- Filter Jenis --}}
+                <div class="field" style="display:flex;flex-direction:column;gap:4px">
+                    <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Jenis</label>
+                    <select name="jenis" class="input input-sm" style="min-width:150px;height:32px">
+                        <option value="">Semua Jenis</option>
+                        <option value="langsung" @selected($filters['jenis'] === 'langsung')>Langsung</option>
+                        <option value="warisan" @selected($filters['jenis'] === 'warisan')>Warisan</option>
+                    </select>
+                </div>
+            </x-slot:filter>
 
-            <div class="toolbar__aksi">
-                <button class="btn btn-primary btn-sm" type="submit">
-                    <x-ikon nama="search" :ukuran="14" />
-                    Terapkan
-                </button>
-                <a class="btn btn-ghost btn-sm" href="{{ route('realisasi') }}">Reset</a>
-            </div>
-        </form>
-
-        <div class="tabel-wrap">
-            <table class="tabel tabel--kunci">
-                <caption class="sr-only">Daftar realisasi RUP beserta sumber dan rantai warisannya</caption>
-                <thead>
-                    <tr>
-                        <th style="width:48px">No</th>
-                        <th style="width:96px">Kode RUP</th>
-                        <th>Nama Paket</th>
-                        <th style="width:190px">Satuan Kerja</th>
-                        <th style="width:112px">Sumber</th>
-                        <th class="num" style="width:140px">Pagu</th>
-                        <th style="width:86px">Jenis</th>
-                        <th style="width:48px"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($baris as $b)
-                        <tr>
-                            <td class="text-mute tnum">{{ $b['no'] }}</td>
-                            <td class="sel-kode">{{ $b['kd_rup'] }}</td>
-                            <td>
-                                <div class="sel-nama truncate" style="max-width:360px" title="{{ $b['nama_paket'] }}">{{ $b['nama_paket'] }}</div>
-                                <div class="sel-sub">{{ $b['metode'] }}</div>
-                            </td>
-                            <td class="truncate" style="max-width:210px" title="{{ $b['satker'] }}">{{ $b['satker'] }}</td>
-                            <td>
-                                <span class="chip chip--brand">{{ ucwords(str_replace('-', ' ', $b['sumber'])) }}</span>
-                            </td>
-                            <td class="num">
-                                <div class="fw-600">{{ rp($b['pagu']) }}</div>
-                                <div class="text-xs text-mute">{{ ringkas($b['pagu']) }}</div>
-                            </td>
-                            <td>
-                                @if ($b['jenis'] === 'warisan')
-                                    <span class="badge badge--amber" title="Diwarisi dari kode {{ $b['dari_rup'] }} pada kedalaman {{ $b['depth'] }}">
-                                        <x-ikon nama="layers" :ukuran="11" />
-                                        W{{ $b['depth'] }}
-                                    </span>
-                                @else
-                                    <span class="badge badge--hijau">
-                                        <span class="badge__dot"></span>
-                                        Langsung
-                                    </span>
-                                @endif
-                            </td>
-                            <td>
-                                <button
-                                    class="icon-btn"
-                                    type="button"
-                                    aria-label="Lihat rantai warisan {{ $b['kd_rup'] }}"
-                                    data-buka-rantai
-                                    data-kode="{{ $b['kd_rup'] }}"
-                                    data-dari="{{ $b['dari_rup'] ?? '' }}"
-                                    data-depth="{{ $b['depth'] }}"
-                                    data-paket="{{ $b['nama_paket'] }}"
-                                >
-                                    <x-ikon nama="chevron-right" :ukuran="15" />
-                                </button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <x-paginasi :halaman="$halaman" :per-halaman="$perHalaman" :total="$total" />
+            @include('realisasi.partials.tabel-realisasi', [
+                'baris' => $baris,
+                'sort' => $filters['sort'],
+                'arah' => $filters['arah'],
+            ])
+        </x-datatable>
     </div>
 
-    {{-- ================= PANEL RANTAI WARISAN ================= --}}
+    {{-- ================= PANEL DRAWER RANTAI WARISAN ================= --}}
     <div class="drawer-latar" id="latar-rantai" hidden></div>
     <aside class="drawer" id="drawer-rantai" hidden aria-label="Rantai warisan RUP">
         <div class="drawer__head">
@@ -174,9 +141,8 @@
             <div class="banner banner--info" style="margin-bottom:16px">
                 <span class="banner__ikon"><x-ikon nama="info" :ukuran="16" /></span>
                 <div>
-                    Paket ini mewarisi proses pengadaan dari paket lain. Rantai ditelusuri
-                    mundur melalui kolom <span class="mono">dari_rup</span> hingga menemukan
-                    paket yang memiliki proses sendiri.
+                    Paket ini mewarisi proses pengadaan dari revisi kaji ulang paket sebelumnya. Rantai ditelusuri
+                    hingga paket leluhur pertama yang memiliki proses riil di INAPROC.
                 </div>
             </div>
 
@@ -184,8 +150,8 @@
         </div>
         <div class="drawer__foot">
             <button class="btn btn-ghost btn-sm" type="button" id="tutup-rantai-2">Tutup</button>
-            <a class="btn btn-primary btn-sm" href="{{ route('perencanaan') }}">
-                Buka detail paket
+            <a class="btn btn-primary btn-sm" href="{{ route('report.pantau', ['jenis' => 'rup']) }}">
+                Lihat di Pantau RUP
                 <x-ikon nama="arrow-right" :ukuran="14" />
             </a>
         </div>
@@ -209,21 +175,20 @@
             var dari = data.dari || '';
             var html = '';
 
-            // Rantai ditampilkan dari akar menuju paket yang dipilih.
             for (var d = depth; d >= 1; d--) {
                 html += '<div class="timeline__item">'
                      + '<span class="timeline__titik"></span>'
                      + '<div class="timeline__waktu">Kedalaman ' + d + '</div>'
-                     + '<div class="timeline__judul mono">' + (d === depth ? dari || kode : '66' + (100000 + d * 137)) + '</div>'
-                     + '<div class="timeline__ket">Mewariskan proses ke tingkat di atasnya</div>'
+                     + '<div class="timeline__judul mono">' + (d === depth ? (dari || kode) : 'Leluhur RUP') + '</div>'
+                     + '<div class="timeline__ket">Mewariskan proses ke kaji ulang berikutnya</div>'
                      + '</div>';
             }
 
             html += '<div class="timeline__item timeline__item--kini">'
                  + '<span class="timeline__titik"></span>'
-                 + '<div class="timeline__waktu">Kedalaman 0 · paket dipilih</div>'
+                 + '<div class="timeline__waktu">Paket Terpilih (Kini)</div>'
                  + '<div class="timeline__judul mono">' + kode + '</div>'
-                 + '<div class="timeline__ket">Paket ini memiliki proses pengadaan</div>'
+                 + '<div class="timeline__ket">Paket RUP aktif terumumkan</div>'
                  + '</div>';
 
             isi.innerHTML = html;
@@ -232,25 +197,31 @@
         }
 
         function tutup() {
-            latar.hidden = true;
-            drawer.hidden = true;
+            if (latar) latar.hidden = true;
+            if (drawer) drawer.hidden = true;
         }
 
-        document.querySelectorAll('[data-buka-rantai]').forEach(function (t) {
-            t.addEventListener('click', function () {
+        // Delegasi event agar tetap berfungsi setelah tabel diperbarui via AJAX DataTable
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-buka-rantai]');
+            if (btn) {
                 buka({
-                    kode: t.dataset.kode,
-                    dari: t.dataset.dari,
-                    depth: t.dataset.depth,
-                    paket: t.dataset.paket
+                    kode: btn.dataset.kode,
+                    dari: btn.dataset.dari,
+                    depth: btn.dataset.depth,
+                    paket: btn.dataset.paket
                 });
-            });
+            }
         });
 
-        latar.addEventListener('click', tutup);
-        document.getElementById('tutup-rantai').addEventListener('click', tutup);
-        document.getElementById('tutup-rantai-2').addEventListener('click', tutup);
-        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') tutup(); });
+        if (latar) latar.addEventListener('click', tutup);
+        var tutup1 = document.getElementById('tutup-rantai');
+        if (tutup1) tutup1.addEventListener('click', tutup);
+        var tutup2 = document.getElementById('tutup-rantai-2');
+        if (tutup2) tutup2.addEventListener('click', tutup);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') tutup();
+        });
     })();
 </script>
 @endpush
