@@ -117,4 +117,32 @@ class PantauRupTest extends TestCase
                 'perHalaman' => 50,
             ]);
     }
+
+    public function test_rekap_satker_datatable_dan_thead_grouping(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson('/report/pantau/rup?tabel=satker&per_halaman=10');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'tabel',
+                'total',
+                'halaman',
+                'perHalaman',
+                'sort',
+                'arah',
+                'html_tabel',
+                'html_paginasi',
+            ]);
+
+        $htmlTabel = (string) $response->json('html_tabel');
+        $this->assertStringContainsString('colspan="2"', $htmlTabel);
+        $this->assertStringContainsString('Penyedia', $htmlTabel);
+        $this->assertStringContainsString('Swakelola', $htmlTabel);
+        $this->assertStringContainsString('Penyedia Dalam Swakelola', $htmlTabel);
+        $this->assertStringContainsString('Total Paket', $htmlTabel);
+        $this->assertStringContainsString('Total Pagu', $htmlTabel);
+    }
 }

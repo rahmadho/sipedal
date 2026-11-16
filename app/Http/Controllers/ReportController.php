@@ -67,9 +67,27 @@ class ReportController extends Controller
         // 1. Ringkasan kartu-kartu
         $ringkasan = \App\Support\RupRepository::ringkasan($kdKlpd, $tahun, $satkerId);
 
-        // 2. Tabel Rekap per Satuan Kerja
-        $cariSatker = trim((string) $request->query('cari_satker', ''));
-        $rekapSatker = \App\Support\RupRepository::rekapSatker($kdKlpd, $tahun, $cariSatker !== '' ? $cariSatker : null, $satkerId);
+        $tabel = (string) $request->query('tabel', 'paket');
+
+        // 2. Tabel Rekap per Satuan Kerja (DataTable)
+        $satkerFilters = [
+            'cari' => trim((string) $request->query($tabel === 'satker' ? 'cari' : 'cari_satker', '')),
+            'sort' => (string) $request->query($tabel === 'satker' ? 'sort' : 'sort_satker', 'total_pagu'),
+            'arah' => strtolower((string) $request->query($tabel === 'satker' ? 'arah' : 'arah_satker', 'desc')) === 'asc' ? 'asc' : 'desc',
+            'per_halaman' => max(5, min(100, (int) $request->query($tabel === 'satker' ? 'per_halaman' : 'per_halaman_satker', 10))),
+            'halaman' => max(1, (int) $request->query($tabel === 'satker' ? 'halaman' : 'halaman_satker', 1)),
+        ];
+
+        $rekapSatker = \App\Support\RupRepository::rekapSatker(
+            $kdKlpd,
+            $tahun,
+            $satkerFilters['cari'] !== '' ? $satkerFilters['cari'] : null,
+            $satkerId,
+            $satkerFilters['sort'],
+            $satkerFilters['arah'],
+            $satkerFilters['per_halaman'],
+            $satkerFilters['halaman']
+        );
 
         // 3. Tabel Paket (dibagi 2: penyedia & swakelola)
         $tab = $request->query('tab', 'penyedia');
@@ -101,6 +119,36 @@ class ReportController extends Controller
 
         // Respons AJAX / Server-side DataTable (tanpa reload halaman)
         if ($request->ajax() || $request->wantsJson() || $request->query('ajax')) {
+            if ($tabel === 'satker') {
+                $htmlTabel = view('report.partials.tabel-rekap-satker', [
+                    'baris' => $rekapSatker['baris'],
+                    'grandTotal' => $rekapSatker['grand_total'],
+                    'sort' => $satkerFilters['sort'],
+                    'arah' => $satkerFilters['arah'],
+                    'halaman' => $satkerFilters['halaman'],
+                    'perHalaman' => $satkerFilters['per_halaman'],
+                    'tab' => $tab,
+                ])->render();
+
+                $htmlPaginasi = view('components.paginasi', [
+                    'halaman' => $satkerFilters['halaman'],
+                    'perHalaman' => $satkerFilters['per_halaman'],
+                    'total' => $rekapSatker['total'],
+                ])->render();
+
+                return response()->json([
+                    'success' => true,
+                    'tabel' => 'satker',
+                    'total' => $rekapSatker['total'],
+                    'halaman' => $satkerFilters['halaman'],
+                    'perHalaman' => $satkerFilters['per_halaman'],
+                    'sort' => $satkerFilters['sort'],
+                    'arah' => $satkerFilters['arah'],
+                    'html_tabel' => $htmlTabel,
+                    'html_paginasi' => $htmlPaginasi,
+                ]);
+            }
+
             $htmlTabel = view('report.partials.tabel-paket-rup', [
                 'tab' => $tab,
                 'baris' => $hasilPaket['items'],
@@ -116,6 +164,7 @@ class ReportController extends Controller
 
             return response()->json([
                 'success' => true,
+                'tabel' => 'paket',
                 'tab' => $tab,
                 'total' => $hasilPaket['total'],
                 'halaman' => $halaman,
@@ -135,6 +184,7 @@ class ReportController extends Controller
             'tahun' => $tahun,
             'ringkasan' => $ringkasan,
             'rekapSatker' => $rekapSatker,
+            'satkerFilters' => $satkerFilters,
             'cariSatker' => $cariSatker,
             'tab' => $tab,
             'baris' => $hasilPaket['items'],

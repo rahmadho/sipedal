@@ -231,98 +231,39 @@
 
     {{-- ================= BAGIAN 3: TABEL REKAP PER SATUAN KERJA ================= --}}
     <div class="card" style="margin-bottom:24px" id="rekap-satker">
-        <div class="card__head">
-            <div>
+        <div class="card__head" style="border-bottom:none;padding-bottom:12px">
+            <div style="flex:1">
                 <h2>Rekapitulasi per Satuan Kerja</h2>
                 <p>Distribusi paket dan pagu Penyedia, Swakelola, dan Penyedia Dalam Swakelola (PDS) per Satker</p>
             </div>
-            <div class="head-aksi">
-                <form method="GET" action="{{ route('report.pantau', ['jenis' => 'rup']) }}#rekap-satker" style="display:flex;gap:6px">
-                    <input type="hidden" name="tab" value="{{ $tab }}">
-                    <div style="position:relative">
-                        <input
-                            type="search"
-                            name="cari_satker"
-                            value="{{ $cariSatker }}"
-                            placeholder="Cari satker..."
-                            class="input input-sm"
-                            style="width:200px;padding-left:26px"
-                        >
-                        <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-mute);pointer-events:none">
-                            <x-ikon nama="search" :ukuran="13" />
-                        </span>
-                    </div>
-                    @if ($cariSatker !== '')
-                        <a href="{{ route('report.pantau', ['jenis' => 'rup', 'tab' => $tab]) }}#rekap-satker" class="btn btn-ghost btn-sm">Reset</a>
-                    @endif
-                </form>
-            </div>
         </div>
 
-        <div class="tabel-wrap">
-            <table class="tabel" aria-label="Rekapitulasi RUP per Satker">
-                <thead>
-                    <tr>
-                        <th style="width:44px" class="num">No</th>
-                        <th>Satuan Kerja</th>
-                        <th class="num" style="background:var(--blue-50);border-left:1px solid var(--border)">Penyedia (Pkt)</th>
-                        <th class="num" style="background:var(--blue-50)">Penyedia (Pagu)</th>
-                        <th class="num" style="background:var(--green-50);border-left:1px solid var(--border)">Swakelola (Pkt)</th>
-                        <th class="num" style="background:var(--green-50)">Swakelola (Pagu)</th>
-                        <th class="num" style="background:var(--amber-50);border-left:1px solid var(--border)">PDS (Pkt)</th>
-                        <th class="num" style="background:var(--amber-50)">PDS (Pagu)</th>
-                        <th class="num" style="background:var(--gray-100);border-left:1px solid var(--border)">Total Paket</th>
-                        <th class="num" style="background:var(--gray-100)">Total Pagu</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($rekapSatker['baris'] as $idx => $s)
-                        <tr>
-                            <td class="num" style="color:var(--text-mute)">{{ $idx + 1 }}</td>
-                            <td>
-                                <a
-                                    href="{{ route('report.pantau', ['jenis' => 'rup', 'tab' => $tab, 'satker' => $s['kd_satker']]) }}#daftar-paket"
-                                    style="font-weight:600;color:var(--brand-700)"
-                                    title="Klik untuk menyaring paket satker ini"
-                                >
-                                    {{ $s['nama_satker'] }}
-                                </a>
-                                @if ($s['kd_satker_str'] !== '')
-                                    <div style="font-size:11px;color:var(--text-mute)">{{ $s['kd_satker_str'] }}</div>
-                                @endif
-                            </td>
-                            <td class="num" style="border-left:1px solid var(--border)">{{ angka($s['penyedia']['paket']) }}</td>
-                            <td class="num" title="{{ rp($s['penyedia']['pagu']) }}">{{ ringkas($s['penyedia']['pagu']) }}</td>
-                            <td class="num" style="border-left:1px solid var(--border)">{{ angka($s['swakelola']['paket']) }}</td>
-                            <td class="num" title="{{ rp($s['swakelola']['pagu']) }}">{{ ringkas($s['swakelola']['pagu']) }}</td>
-                            <td class="num" style="border-left:1px solid var(--border)">{{ angka($s['pds']['paket']) }}</td>
-                            <td class="num" title="{{ rp($s['pds']['pagu']) }}">{{ ringkas($s['pds']['pagu']) }}</td>
-                            <td class="num" style="border-left:1px solid var(--border);font-weight:700">{{ angka($s['total']['paket']) }}</td>
-                            <td class="num" style="font-weight:700;color:var(--brand-700)" title="{{ rp($s['total']['pagu']) }}">{{ ringkas($s['total']['pagu']) }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" style="text-align:center;padding:24px;color:var(--text-mute)">
-                                Tidak ada data satuan kerja yang sesuai dengan kata kunci pencarian.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-                <tfoot>
-                    <tr style="background:var(--gray-100);font-weight:700">
-                        <td colspan="2" style="text-align:right;padding-right:16px">GRAND TOTAL:</td>
-                        <td class="num" style="border-left:1px solid var(--border)">{{ angka($rekapSatker['grand_total']['penyedia']['paket']) }}</td>
-                        <td class="num" title="{{ rp($rekapSatker['grand_total']['penyedia']['pagu']) }}">{{ ringkas($rekapSatker['grand_total']['penyedia']['pagu']) }}</td>
-                        <td class="num" style="border-left:1px solid var(--border)">{{ angka($rekapSatker['grand_total']['swakelola']['paket']) }}</td>
-                        <td class="num" title="{{ rp($rekapSatker['grand_total']['swakelola']['pagu']) }}">{{ ringkas($rekapSatker['grand_total']['swakelola']['pagu']) }}</td>
-                        <td class="num" style="border-left:1px solid var(--border)">{{ angka($rekapSatker['grand_total']['pds']['paket']) }}</td>
-                        <td class="num" title="{{ rp($rekapSatker['grand_total']['pds']['pagu']) }}">{{ ringkas($rekapSatker['grand_total']['pds']['pagu']) }}</td>
-                        <td class="num" style="border-left:1px solid var(--border);color:var(--brand-800)">{{ angka($rekapSatker['grand_total']['total']['paket']) }}</td>
-                        <td class="num" style="color:var(--brand-800)" title="{{ rp($rekapSatker['grand_total']['total']['pagu']) }}">{{ ringkas($rekapSatker['grand_total']['total']['pagu']) }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        <x-datatable
+            id="dt-rekap-satker"
+            :action="route('report.pantau', ['jenis' => 'rup'])"
+            :cari="$satkerFilters['cari']"
+            cari-placeholder="Cari nama atau kode satuan kerja..."
+            :per-halaman="$satkerFilters['per_halaman']"
+            :per-halaman-opsi="[10, 25, 50, 100]"
+            :halaman="$satkerFilters['halaman']"
+            :total="$rekapSatker['total']"
+            :sort="$satkerFilters['sort']"
+            :arah="$satkerFilters['arah']"
+        >
+            <x-slot:filter>
+                <input type="hidden" name="tabel" value="satker">
+            </x-slot:filter>
+
+            @include('report.partials.tabel-rekap-satker', [
+                'baris' => $rekapSatker['baris'],
+                'grandTotal' => $rekapSatker['grand_total'],
+                'sort' => $satkerFilters['sort'],
+                'arah' => $satkerFilters['arah'],
+                'halaman' => $satkerFilters['halaman'],
+                'perHalaman' => $satkerFilters['per_halaman'],
+                'tab' => $tab,
+            ])
+        </x-datatable>
     </div>
 
     {{-- ================= BAGIAN 4: TABEL DAFTAR PAKET ================= --}}
@@ -377,6 +318,8 @@
 
             {{-- Filter Kustom Toolbar --}}
             <x-slot:filter>
+                <input type="hidden" name="tabel" value="paket">
+
                 {{-- Filter Satker --}}
                 <div class="field" style="display:flex;flex-direction:column;gap:4px">
                     <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Satker</label>

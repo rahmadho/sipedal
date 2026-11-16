@@ -228,8 +228,16 @@ class RupRepository
      * 3. Penyedia Dalam Swakelola / PDS (Paket & Pagu)
      * 4. Total Keseluruhan (Paket & Pagu)
      */
-    public static function rekapSatker(string $kdKlpd, int $tahun, ?string $cari = null, ?int $satkerId = null): array
-    {
+    public static function rekapSatker(
+        string $kdKlpd,
+        int $tahun,
+        ?string $cari = null,
+        ?int $satkerId = null,
+        string $sort = 'total_pagu',
+        string $arah = 'desc',
+        int $perHalaman = 10,
+        int $halaman = 1
+    ): array {
         $kdKlpd = strtoupper($kdKlpd);
         $cacheKey = "sipedal_rup_satker_{$kdKlpd}_{$tahun}_" . ($satkerId ?? 'all');
 
@@ -357,9 +365,38 @@ class RupRepository
             $grandTotal['total']['pagu'] += $s['total']['pagu'];
         }
 
+        // Pengurutan (sorting)
+        $arah = strtolower($arah) === 'asc' ? 'asc' : 'desc';
+        usort($semua, static function (array $a, array $b) use ($sort, $arah): int {
+            $cmp = match ($sort) {
+                'nama_satker' => strcasecmp($a['nama_satker'], $b['nama_satker']),
+                'kd_satker' => $a['kd_satker'] <=> $b['kd_satker'],
+                'penyedia_paket' => $a['penyedia']['paket'] <=> $b['penyedia']['paket'],
+                'penyedia_pagu' => $a['penyedia']['pagu'] <=> $b['penyedia']['pagu'],
+                'swakelola_paket' => $a['swakelola']['paket'] <=> $b['swakelola']['paket'],
+                'swakelola_pagu' => $a['swakelola']['pagu'] <=> $b['swakelola']['pagu'],
+                'pds_paket' => $a['pds']['paket'] <=> $b['pds']['paket'],
+                'pds_pagu' => $a['pds']['pagu'] <=> $b['pds']['pagu'],
+                'total_paket' => $a['total']['paket'] <=> $b['total']['paket'],
+                default => $a['total']['pagu'] <=> $b['total']['pagu'],
+            };
+
+            return $arah === 'asc' ? $cmp : -$cmp;
+        });
+
+        $total = count($semua);
+        $baris = $perHalaman > 0
+            ? array_slice($semua, max(0, ($halaman - 1) * $perHalaman), $perHalaman)
+            : $semua;
+
         return [
-            'baris' => $semua,
+            'baris' => $baris,
             'grand_total' => $grandTotal,
+            'total' => $total,
+            'halaman' => $halaman,
+            'per_halaman' => $perHalaman,
+            'sort' => $sort,
+            'arah' => $arah,
         ];
     }
 

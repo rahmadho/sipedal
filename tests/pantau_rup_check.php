@@ -85,4 +85,20 @@ assert($dtJson['perHalaman'] === 50, 'perHalaman not 50');
 assert(str_contains($dtJson['html_paginasi'], 'Menampilkan'), 'html_paginasi missing info');
 echo '✓ Per-halaman settings OK (perHalaman = 50)' . PHP_EOL;
 
+// 8. Check Rekap Satker DataTable & Thead Grouping
+$satkerAjaxReq = \Illuminate\Http\Request::create('/report/pantau/rup?tabel=satker&per_halaman=10&sort=total_pagu&arah=desc', 'GET');
+$satkerAjaxReq->headers->set('X-Requested-With', 'XMLHttpRequest');
+$satkerAjaxReq->headers->set('Accept', 'application/json');
+$satkerAjaxReq->setLaravelSession($session);
+$satkerAjaxRes = $httpKernel->handle($satkerAjaxReq);
+assert($satkerAjaxRes->getStatusCode() === 200, 'satker AJAX status not 200');
+$satkerJson = json_decode($satkerAjaxRes->getContent(), true);
+assert(isset($satkerJson['html_tabel']) && !empty($satkerJson['html_tabel']), 'satker AJAX missing html_tabel');
+assert(isset($satkerJson['html_paginasi']) && !empty($satkerJson['html_paginasi']), 'satker AJAX missing html_paginasi');
+assert(str_contains($satkerJson['html_tabel'], 'colspan="2"'), 'satker AJAX table missing colspan 2');
+assert(str_contains($satkerJson['html_tabel'], 'Penyedia Dalam Swakelola'), 'satker AJAX table missing PDS group');
+assert(str_contains($satkerJson['html_tabel'], 'Total Paket'), 'satker AJAX table missing Total Paket');
+assert(str_contains($satkerJson['html_tabel'], 'Total Pagu'), 'satker AJAX table missing Total Pagu');
+echo '✓ Rekap Satker DataTable & Thead Grouping OK (' . $satkerJson['total'] . ' satker total)' . PHP_EOL;
+
 echo '== ALL CHECKS PASSED ==' . PHP_EOL;
