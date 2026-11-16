@@ -104,6 +104,11 @@ class ReportController extends Controller
             $satkerInput = explode(',', $satkerInput);
         }
 
+        $jenisInput = $request->input('jenis_pengadaan');
+        if (is_string($jenisInput) && str_contains($jenisInput, ',')) {
+            $jenisInput = explode(',', $jenisInput);
+        }
+
         $filters = [
             'cari' => trim((string) $request->query('cari', '')),
             'satker' => $satkerInput,
@@ -112,7 +117,7 @@ class ReportController extends Controller
             'tipe_paket' => $request->query('tipe_paket'),
             'status_pdn' => $request->query('status_pdn'),
             'status_proses' => $request->query('status_proses'),
-            'jenis_pengadaan' => $request->query('jenis_pengadaan'),
+            'jenis_pengadaan' => $jenisInput,
             'tipe_swakelola' => $request->query('tipe_swakelola'),
         ];
 
@@ -198,7 +203,7 @@ class ReportController extends Controller
             'perHalaman' => $perHalaman,
             'filters' => $filters,
             'satkerPilihan' => \App\Support\Mock\SatkerPilihan::semua(600, $kdKlpd),
-            'jenisOpsi' => array_column($ringkasan['jenis_pengadaan'], 'jenis'),
+            'jenisOpsi' => \App\Support\RupRepository::JENIS_PENGADAAN_BAKU,
         ]);
     }
 }

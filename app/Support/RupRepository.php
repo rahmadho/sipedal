@@ -22,6 +22,16 @@ class RupRepository
     public const STATUS_UMUMKAN = ['Terumumkan', 'Sudah Diproses'];
 
     /**
+     * 4 Kategori Baku Jenis Pengadaan Penyedia sesuai Perpres PBJ & INAPROC
+     */
+    public const JENIS_PENGADAAN_BAKU = [
+        'Barang' => 'Barang',
+        'Pekerjaan Konstruksi' => 'Pekerjaan Konstruksi',
+        'Jasa Konsultansi' => 'Jasa Konsultansi',
+        'Jasa Lainnya' => 'Jasa Lainnya',
+    ];
+
+    /**
      * Ambil ringkasan seluruh card metrik RUP:
      * 1. Status PDN Penyedia (PDN & Non-PDN: Jumlah & Pagu)
      * 2. Tipe Paket Penyedia (Penyedia & PDS: Jumlah, Diproses, Belum Diproses)
@@ -138,8 +148,30 @@ class RupRepository
             $pdn['non_pdn']['persen'] = round(($pdn['non_pdn']['pagu'] / $pdn['total']['pagu']) * 100, 1);
         }
 
-        // Persentase Jenis Pengadaan & urutkan pagu terbesar
-        $daftarJenis = array_values($jenisMap);
+        // Gabungkan varian jenis pengadaan (termasuk komposit titik-koma seperti 'Barang;Jasa Lainnya')
+        // ke dalam 4 kategori baku: Barang, Pekerjaan Konstruksi, Jasa Konsultansi, Jasa Lainnya
+        $bakuMap = [
+            'Pekerjaan Konstruksi' => ['jenis' => 'Pekerjaan Konstruksi', 'jumlah' => 0, 'pagu' => 0.0, 'persen' => 0.0],
+            'Barang' => ['jenis' => 'Barang', 'jumlah' => 0, 'pagu' => 0.0, 'persen' => 0.0],
+            'Jasa Lainnya' => ['jenis' => 'Jasa Lainnya', 'jumlah' => 0, 'pagu' => 0.0, 'persen' => 0.0],
+            'Jasa Konsultansi' => ['jenis' => 'Jasa Konsultansi', 'jumlah' => 0, 'pagu' => 0.0, 'persen' => 0.0],
+        ];
+
+        foreach ($jenisMap as $rawNama => $val) {
+            $bagian = array_filter(array_map('trim', explode(';', (string) $rawNama)));
+            if (empty($bagian)) {
+                $bagian = [$rawNama];
+            }
+            foreach ($bagian as $sub) {
+                $target = self::normalisasiJenisPengadaan($sub);
+                if ($target && isset($bakuMap[$target])) {
+                    $bakuMap[$target]['jumlah'] += $val['jumlah'];
+                    $bakuMap[$target]['pagu'] += $val['pagu'];
+                }
+            }
+        }
+
+        $daftarJenis = array_values($bakuMap);
         foreach ($daftarJenis as &$jItem) {
             $jItem['persen'] = $totalPaguPenyedia > 0
                 ? round(($jItem['pagu'] / $totalPaguPenyedia) * 100, 1)
@@ -489,9 +521,30 @@ class RupRepository
             }
         }
 
-        // Filter Jenis Pengadaan
+        // Filter Jenis Pengadaan (Mendukung multi-select & data komposit bertitik koma seperti 'Barang;Jasa Lainnya')
         if (! empty($filters['jenis_pengadaan'])) {
-            $query->where('p.jenis_pengadaan', $filters['jenis_pengadaan']);
+            $jpList = is_array($filters['jenis_pengadaan'])
+                ? array_filter($filters['jenis_pengadaan'])
+                : array_filter(array_map('trim', explode(',', (string) $filters['jenis_pengadaan'])));
+
+            if (! empty($jpList)) {
+                $query->where(function ($subQ) use ($jpList) {
+                    foreach ($jpList as $jpItem) {
+                        $jpClean = strtolower(trim((string) $jpItem));
+                        if (str_contains($jpClean, 'barang')) {
+                            $subQ->orWhere('p.jenis_pengadaan', 'ILIKE', '%Barang%');
+                        } elseif (str_contains($jpClean, 'konstruksi')) {
+                            $subQ->orWhere('p.jenis_pengadaan', 'ILIKE', '%Konstruksi%');
+                        } elseif (str_contains($jpClean, 'konsultansi')) {
+                            $subQ->orWhere('p.jenis_pengadaan', 'ILIKE', '%Konsultansi%');
+                        } elseif (str_contains($jpClean, 'lainnya')) {
+                            $subQ->orWhere('p.jenis_pengadaan', 'ILIKE', '%Lainnya%');
+                        } else {
+                            $subQ->orWhere('p.jenis_pengadaan', 'ILIKE', "%{$jpItem}%");
+                        }
+                    }
+                });
+            }
         }
 
         // Filter Status / Jenis Proses
@@ -688,5 +741,31 @@ class RupRepository
             'items' => $items,
             'total' => $total,
         ];
+    }
+
+    /**
+     * Petakan variasi string ke kategori baku jenis pengadaan.
+     */
+    public static function normalisasiJenisPengadaan(?string $raw): ?string
+    {
+        if ($raw === null || trim($raw) === '') {
+            return null;
+        }
+
+        $s = strtolower(trim($raw));
+        if (str_contains($s, 'barang')) {
+            return 'Barang';
+        }
+        if (str_contains($s, 'konstruksi')) {
+            return 'Pekerjaan Konstruksi';
+        }
+        if (str_contains($s, 'konsultansi')) {
+            return 'Jasa Konsultansi';
+        }
+        if (str_contains($s, 'lainnya')) {
+            return 'Jasa Lainnya';
+        }
+
+        return null;
     }
 }

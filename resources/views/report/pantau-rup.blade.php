@@ -368,14 +368,17 @@
                         </select>
                     </div>
 
-                    <div class="field" style="display:flex;flex-direction:column;gap:4px">
-                        <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Jenis</label>
-                        <select name="jenis_pengadaan" class="input input-sm" style="height:32px">
-                            <option value="">Semua Jenis</option>
-                            @foreach ($jenisOpsi as $jo)
-                                <option value="{{ $jo }}" @selected(($filters['jenis_pengadaan'] ?? '') === $jo)>{{ $jo }}</option>
-                            @endforeach
-                        </select>
+                    {{-- Filter Jenis Pengadaan Combobox dengan Filter & Multi-Select --}}
+                    <div class="field" style="display:flex;flex-direction:column;gap:4px;min-width:180px;max-width:240px">
+                        <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.3px">Jenis Pengadaan</label>
+                        <x-combobox
+                            name="jenis_pengadaan"
+                            :options="$jenisOpsi"
+                            :selected="$filters['jenis_pengadaan']"
+                            :multiple="true"
+                            placeholder="Semua Jenis"
+                            cari="Cari jenis..."
+                        />
                     </div>
                 </div>
 
