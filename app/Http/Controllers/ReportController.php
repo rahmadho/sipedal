@@ -84,6 +84,8 @@ class ReportController extends Controller
         $filters = [
             'cari' => trim((string) $request->query('cari', '')),
             'satker' => $satkerId ?: $request->query('satker'),
+            'sort' => (string) $request->query('sort', 'kd_rup'),
+            'arah' => strtolower((string) $request->query('arah', 'desc')) === 'asc' ? 'asc' : 'desc',
             'tipe_paket' => $request->query('tipe_paket'),
             'status_pdn' => $request->query('status_pdn'),
             'status_proses' => $request->query('status_proses'),
@@ -95,6 +97,34 @@ class ReportController extends Controller
             $hasilPaket = \App\Support\RupRepository::daftarSwakelola($kdKlpd, $tahun, $filters, $perHalaman, $offset);
         } else {
             $hasilPaket = \App\Support\RupRepository::daftarPenyedia($kdKlpd, $tahun, $filters, $perHalaman, $offset);
+        }
+
+        // Respons AJAX / Server-side DataTable (tanpa reload halaman)
+        if ($request->ajax() || $request->wantsJson() || $request->query('ajax')) {
+            $htmlTabel = view('report.partials.tabel-paket-rup', [
+                'tab' => $tab,
+                'baris' => $hasilPaket['items'],
+                'sort' => $filters['sort'],
+                'arah' => $filters['arah'],
+            ])->render();
+
+            $htmlPaginasi = view('components.paginasi', [
+                'halaman' => $halaman,
+                'perHalaman' => $perHalaman,
+                'total' => $hasilPaket['total'],
+            ])->render();
+
+            return response()->json([
+                'success' => true,
+                'tab' => $tab,
+                'total' => $hasilPaket['total'],
+                'halaman' => $halaman,
+                'perHalaman' => $perHalaman,
+                'sort' => $filters['sort'],
+                'arah' => $filters['arah'],
+                'html_tabel' => $htmlTabel,
+                'html_paginasi' => $htmlPaginasi,
+            ]);
         }
 
         return view('report.pantau-rup', [

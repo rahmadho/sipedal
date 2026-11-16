@@ -336,26 +336,28 @@
         </div>
 
         {{-- Segmented Sub-tab Switcher --}}
-        <div style="padding:0 18px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+        <div style="padding:0 18px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px" id="subtab-rup">
             <a
                 href="{{ route('report.pantau', ['jenis' => 'rup', 'tab' => 'penyedia']) }}#daftar-paket"
+                id="btn-tab-penyedia"
                 class="btn {{ $tab === 'penyedia' ? 'btn-primary' : 'btn-ghost' }} btn-sm"
                 style="gap:6px"
             >
                 <x-ikon nama="building" :ukuran="14" />
                 Penyedia & PDS
-                <span class="badge {{ $tab === 'penyedia' ? 'badge--brand' : 'badge--netral' }}">
+                <span id="badge-tab-penyedia" class="badge {{ $tab === 'penyedia' ? 'badge--brand' : 'badge--netral' }}">
                     {{ angka($ringkasan['tipe_paket']['total']['jumlah']) }}
                 </span>
             </a>
             <a
                 href="{{ route('report.pantau', ['jenis' => 'rup', 'tab' => 'swakelola']) }}#daftar-paket"
+                id="btn-tab-swakelola"
                 class="btn {{ $tab === 'swakelola' ? 'btn-primary' : 'btn-ghost' }} btn-sm"
                 style="gap:6px"
             >
                 <x-ikon nama="layers" :ukuran="14" />
                 Swakelola
-                <span class="badge {{ $tab === 'swakelola' ? 'badge--brand' : 'badge--netral' }}">
+                <span id="badge-tab-swakelola" class="badge {{ $tab === 'swakelola' ? 'badge--brand' : 'badge--netral' }}">
                     {{ angka($ringkasan['swakelola']['total']['jumlah']) }}
                 </span>
             </a>
@@ -363,8 +365,11 @@
 
         {{-- Filter toolbar --}}
         <div class="card__body" style="padding-top:14px;padding-bottom:14px;background:var(--gray-50);border-bottom:1px solid var(--border)">
-            <form method="GET" action="{{ route('report.pantau', ['jenis' => 'rup']) }}#daftar-paket" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-                <input type="hidden" name="tab" value="{{ $tab }}">
+            <form id="form-filter-rup" method="GET" action="{{ route('report.pantau', ['jenis' => 'rup']) }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+                <input type="hidden" name="tab" id="filter-tab" value="{{ $tab }}">
+                <input type="hidden" name="sort" id="filter-sort" value="{{ $filters['sort'] ?? 'kd_rup' }}">
+                <input type="hidden" name="arah" id="filter-arah" value="{{ $filters['arah'] ?? 'desc' }}">
+                <input type="hidden" name="halaman" id="filter-halaman" value="{{ $halaman }}">
 
                 {{-- Cari Teks --}}
                 <div style="position:relative;flex:1;min-width:220px">
@@ -375,6 +380,7 @@
                         placeholder="Cari kode RUP / nama paket..."
                         class="input input-sm"
                         style="width:100%;padding-left:28px"
+                        autocomplete="off"
                     >
                     <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-mute);pointer-events:none">
                         <x-ikon nama="search" :ukuran="13" />
@@ -391,187 +397,268 @@
                     @endforeach
                 </select>
 
-                @if ($tab === 'penyedia')
+                {{-- Filter Khusus Tab Penyedia --}}
+                <div id="filter-khusus-penyedia" style="display:{{ $tab === 'penyedia' ? 'contents' : 'none' }}">
                     {{-- Filter Tipe Paket --}}
                     <select name="tipe_paket" class="input input-sm">
                         <option value="">Semua Tipe</option>
-                        <option value="penyedia" @selected($filters['tipe_paket'] === 'penyedia')>Penyedia (Murni)</option>
-                        <option value="pds" @selected($filters['tipe_paket'] === 'pds')>Penyedia Dalam Swakelola (PDS)</option>
+                        <option value="penyedia" @selected(($filters['tipe_paket'] ?? '') === 'penyedia')>Penyedia (Murni)</option>
+                        <option value="pds" @selected(($filters['tipe_paket'] ?? '') === 'pds')>Penyedia Dalam Swakelola (PDS)</option>
                     </select>
 
                     {{-- Filter Status PDN --}}
                     <select name="status_pdn" class="input input-sm">
                         <option value="">Semua PDN</option>
-                        <option value="PDN" @selected($filters['status_pdn'] === 'PDN')>PDN</option>
-                        <option value="Non-PDN" @selected($filters['status_pdn'] === 'Non-PDN')>Non-PDN</option>
+                        <option value="PDN" @selected(($filters['status_pdn'] ?? '') === 'PDN')>PDN</option>
+                        <option value="Non-PDN" @selected(($filters['status_pdn'] ?? '') === 'Non-PDN')>Non-PDN</option>
                     </select>
 
-                    {{-- Filter Status Proses --}}
+                    {{-- Filter Nama / Status Proses Pengadaan --}}
                     <select name="status_proses" class="input input-sm">
                         <option value="">Semua Status Proses</option>
-                        <option value="diproses" @selected($filters['status_proses'] === 'diproses')>Sudah Diproses</option>
-                        <option value="belum" @selected($filters['status_proses'] === 'belum')>Belum Diproses</option>
+                        <option value="belum" @selected(($filters['status_proses'] ?? '') === 'belum')>Belum Diproses</option>
+                        <option value="diproses" @selected(($filters['status_proses'] ?? '') === 'diproses')>Semua Diproses</option>
+                        <option value="e-katalog" @selected(($filters['status_proses'] ?? '') === 'e-katalog')>E-Katalog</option>
+                        <option value="tender" @selected(($filters['status_proses'] ?? '') === 'tender')>Tender</option>
+                        <option value="non-tender" @selected(($filters['status_proses'] ?? '') === 'non-tender')>Non Tender</option>
+                        <option value="pencatatan-non-tender" @selected(($filters['status_proses'] ?? '') === 'pencatatan-non-tender')>Pencatatan Nontender</option>
+                        <option value="pencatatan-swakelola" @selected(($filters['status_proses'] ?? '') === 'pencatatan-swakelola')>Pencatatan Swakelola</option>
+                        <option value="e-kontrak" @selected(($filters['status_proses'] ?? '') === 'e-kontrak')>E-Kontrak</option>
                     </select>
 
                     {{-- Filter Jenis Pengadaan --}}
                     <select name="jenis_pengadaan" class="input input-sm">
                         <option value="">Semua Jenis Pengadaan</option>
                         @foreach ($jenisOpsi as $jo)
-                            <option value="{{ $jo }}" @selected($filters['jenis_pengadaan'] === $jo)>{{ $jo }}</option>
+                            <option value="{{ $jo }}" @selected(($filters['jenis_pengadaan'] ?? '') === $jo)>{{ $jo }}</option>
                         @endforeach
                     </select>
-                @else
-                    {{-- Filter Tipe Swakelola --}}
+                </div>
+
+                {{-- Filter Khusus Tab Swakelola --}}
+                <div id="filter-khusus-swakelola" style="display:{{ $tab === 'swakelola' ? 'contents' : 'none' }}">
                     <select name="tipe_swakelola" class="input input-sm">
                         <option value="">Semua Tipe Swakelola</option>
-                        <option value="1" @selected($filters['tipe_swakelola'] == 1)>Tipe I</option>
-                        <option value="2" @selected($filters['tipe_swakelola'] == 2)>Tipe II</option>
-                        <option value="3" @selected($filters['tipe_swakelola'] == 3)>Tipe III</option>
-                        <option value="4" @selected($filters['tipe_swakelola'] == 4)>Tipe IV</option>
+                        <option value="1" @selected(($filters['tipe_swakelola'] ?? '') == 1)>Tipe I</option>
+                        <option value="2" @selected(($filters['tipe_swakelola'] ?? '') == 2)>Tipe II</option>
+                        <option value="3" @selected(($filters['tipe_swakelola'] ?? '') == 3)>Tipe III</option>
+                        <option value="4" @selected(($filters['tipe_swakelola'] ?? '') == 4)>Tipe IV</option>
                     </select>
-                @endif
+                </div>
 
-                <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
-                <a href="{{ route('report.pantau', ['jenis' => 'rup', 'tab' => $tab]) }}#daftar-paket" class="btn btn-ghost btn-sm">Reset</a>
+                <button type="button" id="btn-reset-filter" class="btn btn-ghost btn-sm">Reset</button>
             </form>
         </div>
 
-        {{-- Konten Tabel Berdasarkan Tab --}}
-        @if ($tab === 'penyedia')
-            {{-- Tabel Penyedia & PDS --}}
-            <div class="tabel-wrap">
-                <table class="tabel" aria-label="Daftar Paket RUP Penyedia dan PDS">
-                    <thead>
-                        <tr>
-                            <th style="width:44px" class="num">No</th>
-                            <th style="width:110px">Kode RUP</th>
-                            <th>Nama Paket</th>
-                            <th>Satuan Kerja</th>
-                            <th>Tipe</th>
-                            <th>Jenis Pengadaan</th>
-                            <th>PDN</th>
-                            <th>Status Proses</th>
-                            <th class="num">Pagu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($baris as $p)
-                            <tr>
-                                <td class="num" style="color:var(--text-mute)">{{ $p['no'] }}</td>
-                                <td>
-                                    <code style="font-weight:600;font-size:11.5px">{{ $p['kd_rup'] }}</code>
-                                </td>
-                                <td>
-                                    <div style="font-weight:600;max-width:320px;line-height:1.35">{{ $p['nama_paket'] }}</div>
-                                    <div style="font-size:11px;color:var(--text-mute);margin-top:2px">
-                                        Metode: {{ $p['metode_pengadaan'] }}
-                                        @if (! empty($p['tgl_pengumuman']))
-                                            · {{ tgl($p['tgl_pengumuman']) }}
-                                        @endif
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="font-size:12px;max-width:200px">{{ $p['nama_satker'] }}</div>
-                                </td>
-                                <td>
-                                    @if ($p['is_pds'])
-                                        <span class="badge badge--amber" title="Penyedia Dalam Swakelola">PDS</span>
-                                    @else
-                                        <span class="badge badge--netral">Penyedia</span>
-                                    @endif
-                                </td>
-                                <td style="font-size:12px">{{ $p['jenis_pengadaan'] }}</td>
-                                <td>
-                                    @if ($p['status_pdn'] === 'PDN')
-                                        <span class="badge badge--hijau">PDN</span>
-                                    @else
-                                        <span class="badge badge--amber">Non-PDN</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($p['status_proses'] === 'Diproses')
-                                        <span class="badge badge--hijau" title="Sumber: {{ $p['sumber_proses'] }}">
-                                            <span class="badge__dot"></span> Diproses
-                                        </span>
-                                    @else
-                                        <span class="badge badge--netral" title="Belum ada proses pengadaan">
-                                            <span class="badge__dot"></span> Belum
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="num" style="font-weight:700">
-                                    <span title="{{ rp($p['pagu']) }}">{{ ringkas($p['pagu']) }}</span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" style="text-align:center;padding:28px;color:var(--text-mute)">
-                                    Tidak ada data paket penyedia yang memenuhi kriteria pencarian.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        @else
-            {{-- Tabel Swakelola --}}
-            <div class="tabel-wrap">
-                <table class="tabel" aria-label="Daftar Paket RUP Swakelola">
-                    <thead>
-                        <tr>
-                            <th style="width:44px" class="num">No</th>
-                            <th style="width:110px">Kode RUP</th>
-                            <th>Nama Paket</th>
-                            <th>Satuan Kerja</th>
-                            <th>Tipe Swakelola</th>
-                            <th>Penyelenggara</th>
-                            <th class="num">Pagu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($baris as $s)
-                            <tr>
-                                <td class="num" style="color:var(--text-mute)">{{ $s['no'] }}</td>
-                                <td>
-                                    <code style="font-weight:600;font-size:11.5px">{{ $s['kd_rup'] }}</code>
-                                </td>
-                                <td>
-                                    <div style="font-weight:600;max-width:340px;line-height:1.35">{{ $s['nama_paket'] }}</div>
-                                    @if (! empty($s['tgl_pengumuman']))
-                                        <div style="font-size:11px;color:var(--text-mute);margin-top:2px">
-                                            Diumumkan: {{ tgl($s['tgl_pengumuman']) }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div style="font-size:12px;max-width:220px">{{ $s['nama_satker'] }}</div>
-                                </td>
-                                <td>
-                                    <span class="badge badge--brand">{{ $s['label_tipe'] }}</span>
-                                </td>
-                                <td style="font-size:12px;max-width:200px">
-                                    {{ $s['penyelenggara'] }}
-                                </td>
-                                <td class="num" style="font-weight:700">
-                                    <span title="{{ rp($s['pagu']) }}">{{ ringkas($s['pagu']) }}</span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" style="text-align:center;padding:28px;color:var(--text-mute)">
-                                    Tidak ada data paket swakelola yang memenuhi kriteria pencarian.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        @endif
+        {{-- Konten Tabel Berdasarkan Tab (Partial Serverside) --}}
+        <div id="tabel-rup-konten" style="position:relative;transition:opacity .15s ease">
+            @include('report.partials.tabel-paket-rup', [
+                'tab' => $tab,
+                'baris' => $baris,
+                'sort' => $filters['sort'] ?? 'kd_rup',
+                'arah' => $filters['arah'] ?? 'desc',
+            ])
+        </div>
 
         {{-- Footer Paginasi --}}
-        <div class="card__foot">
+        <div class="card__foot" id="paginasi-rup-konten">
             <x-paginasi :halaman="$halaman" :per-halaman="$perHalaman" :total="$total" />
         </div>
+    </div>
+
+    {{-- Script DataTables-like Serverside (AJAX search, sort, pagination, tab tanpa full reload) --}}
+    <script>
+    (function() {
+        const form = document.getElementById('form-filter-rup');
+        if (!form) return;
+
+        const inputTab = document.getElementById('filter-tab');
+        const inputSort = document.getElementById('filter-sort');
+        const inputArah = document.getElementById('filter-arah');
+        const inputHalaman = document.getElementById('filter-halaman');
+        const tabelKonten = document.getElementById('tabel-rup-konten');
+        const paginasiKonten = document.getElementById('paginasi-rup-konten');
+        const btnTabPenyedia = document.getElementById('btn-tab-penyedia');
+        const btnTabSwakelola = document.getElementById('btn-tab-swakelola');
+        const filterPenyedia = document.getElementById('filter-khusus-penyedia');
+        const filterSwakelola = document.getElementById('filter-khusus-swakelola');
+        const badgePenyedia = document.getElementById('badge-tab-penyedia');
+        const badgeSwakelola = document.getElementById('badge-tab-swakelola');
+
+        let debounceTimer = null;
+        let abortController = null;
+
+        async function muatData(resetHalaman = false) {
+            if (resetHalaman) {
+                inputHalaman.value = '1';
+            }
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            for (const [key, val] of formData.entries()) {
+                if (val !== '' && val !== null) {
+                    params.set(key, val);
+                }
+            }
+
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+
+            tabelKonten.style.opacity = '0.45';
+            tabelKonten.style.pointerEvents = 'none';
+
+            const url = form.action + '?' + params.toString();
+
+            try {
+                const resp = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    signal: abortController.signal
+                });
+
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const data = await resp.json();
+
+                tabelKonten.innerHTML = data.html_tabel;
+                paginasiKonten.innerHTML = data.html_paginasi;
+
+                inputSort.value = data.sort;
+                inputArah.value = data.arah;
+                inputHalaman.value = data.halaman;
+
+                window.history.pushState(null, '', url);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Gagal memuat tabel RUP:', err);
+                }
+            } finally {
+                tabelKonten.style.opacity = '1';
+                tabelKonten.style.pointerEvents = 'auto';
+            }
+        }
+
+        // 1. Debounce input cari
+        const inputCari = form.querySelector('input[name="cari"]');
+        if (inputCari) {
+            inputCari.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => muatData(true), 320);
+            });
+        }
+
+        // 2. Select dropdown filter
+        form.querySelectorAll('select').forEach(sel => {
+            sel.addEventListener('change', () => muatData(true));
+        });
+
+        // 3. Prevent default form submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            muatData(true);
+        });
+
+        // 4. Tab switcher
+        function aturTampilanTab(tab) {
+            inputTab.value = tab;
+            if (tab === 'penyedia') {
+                btnTabPenyedia.classList.add('btn-primary');
+                btnTabPenyedia.classList.remove('btn-ghost');
+                btnTabSwakelola.classList.add('btn-ghost');
+                btnTabSwakelola.classList.remove('btn-primary');
+                badgePenyedia.className = 'badge badge--brand';
+                badgeSwakelola.className = 'badge badge--netral';
+                if (filterPenyedia) filterPenyedia.style.display = 'contents';
+                if (filterSwakelola) filterSwakelola.style.display = 'none';
+            } else {
+                btnTabSwakelola.classList.add('btn-primary');
+                btnTabSwakelola.classList.remove('btn-ghost');
+                btnTabPenyedia.classList.add('btn-ghost');
+                btnTabPenyedia.classList.remove('btn-primary');
+                badgeSwakelola.className = 'badge badge--brand';
+                badgePenyedia.className = 'badge badge--netral';
+                if (filterPenyedia) filterPenyedia.style.display = 'none';
+                if (filterSwakelola) filterSwakelola.style.display = 'contents';
+            }
+        }
+
+        if (btnTabPenyedia) {
+            btnTabPenyedia.addEventListener('click', function(e) {
+                e.preventDefault();
+                aturTampilanTab('penyedia');
+                muatData(true);
+            });
+        }
+
+        if (btnTabSwakelola) {
+            btnTabSwakelola.addEventListener('click', function(e) {
+                e.preventDefault();
+                aturTampilanTab('swakelola');
+                muatData(true);
+            });
+        }
+
+        // 5. Delegasi klik pengurutan (sortable headers)
+        tabelKonten.addEventListener('click', function(e) {
+            const th = e.target.closest('.th-sortable');
+            if (!th) return;
+            const kolom = th.getAttribute('data-sort');
+            if (!kolom) return;
+
+            if (inputSort.value === kolom) {
+                inputArah.value = (inputArah.value === 'asc') ? 'desc' : 'asc';
+            } else {
+                inputSort.value = kolom;
+                inputArah.value = (kolom === 'pagu' || kolom === 'kd_rup') ? 'desc' : 'asc';
+            }
+            muatData(false);
+        });
+
+        // 6. Delegasi klik tombol paginasi
+        paginasiKonten.addEventListener('click', function(e) {
+            const btn = e.target.closest('.paginasi__btn');
+            if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
+            e.preventDefault();
+
+            const href = btn.getAttribute('href');
+            if (!href) return;
+            try {
+                const u = new URL(href, window.location.origin);
+                const hal = u.searchParams.get('halaman') || '1';
+                inputHalaman.value = hal;
+                muatData(false);
+            } catch (_) {}
+        });
+
+        // 7. Tombol Reset
+        const btnReset = document.getElementById('btn-reset-filter');
+        if (btnReset) {
+            btnReset.addEventListener('click', function(e) {
+                e.preventDefault();
+                form.querySelectorAll('input[type="search"]').forEach(i => i.value = '');
+                form.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+                inputSort.value = 'kd_rup';
+                inputArah.value = 'desc';
+                muatData(true);
+            });
+        }
+
+        // 8. Popstate (browser back/forward button)
+        window.addEventListener('popstate', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentTab = urlParams.get('tab') || 'penyedia';
+            aturTampilanTab(currentTab);
+            for (const [key, val] of urlParams.entries()) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) input.value = val;
+            }
+            muatData(false);
+        });
+    })();
+    </script>
     </div>
 
 @endsection

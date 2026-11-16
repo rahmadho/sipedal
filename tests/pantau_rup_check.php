@@ -35,7 +35,7 @@ assert($swakelola['total'] > 0, 'Swakelola total 0');
 assert(count($swakelola['items']) === 10, 'Swakelola items count mismatch');
 echo '✓ Daftar swakelola OK (' . $swakelola['total'] . ' total)' . PHP_EOL;
 
-// 5. HTTP 200 check
+// 5. HTTP 200 normal check
 $httpKernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
 $request = \Illuminate\Http\Request::create('/report/pantau/rup', 'GET');
 $session = app('session')->driver();
@@ -53,5 +53,19 @@ $request->setLaravelSession($session);
 $response = $httpKernel->handle($request);
 assert($response->getStatusCode() === 200, 'HTTP status not 200');
 echo '✓ HTTP GET /report/pantau/rup returns 200 OK' . PHP_EOL;
+
+// 6. AJAX DataTables serverside check (nama proses + sorting + json)
+$ajaxReq = \Illuminate\Http\Request::create('/report/pantau/rup?status_proses=e-katalog&sort=pagu&arah=desc', 'GET');
+$ajaxReq->headers->set('X-Requested-With', 'XMLHttpRequest');
+$ajaxReq->headers->set('Accept', 'application/json');
+$ajaxReq->setLaravelSession($session);
+$ajaxRes = $httpKernel->handle($ajaxReq);
+assert($ajaxRes->getStatusCode() === 200, 'AJAX status not 200');
+$json = json_decode($ajaxRes->getContent(), true);
+assert(isset($json['html_tabel']) && !empty($json['html_tabel']), 'AJAX missing html_tabel');
+assert(isset($json['html_paginasi']) && !empty($json['html_paginasi']), 'AJAX missing html_paginasi');
+assert(str_contains($json['html_tabel'], 'E-Katalog'), 'AJAX table does not display E-Katalog label');
+assert($json['total'] === 1343, 'AJAX total filter e-katalog mismatch');
+echo '✓ AJAX DataTables serverside OK (E-Katalog: ' . $json['total'] . ' paket)' . PHP_EOL;
 
 echo '== ALL CHECKS PASSED ==' . PHP_EOL;

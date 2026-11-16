@@ -364,6 +364,33 @@ class RupRepository
     }
 
     /**
+     * Konversi kode sumber proses ke label antarmuka yang rapi dan kelas badge.
+     *
+     * @return array{label: string, badge: string, diproses: bool}
+     */
+    public static function labelProses(?string $sumber): array
+    {
+        if (empty($sumber)) {
+            return [
+                'label' => 'Belum Diproses',
+                'badge' => 'badge--netral',
+                'diproses' => false,
+            ];
+        }
+
+        $s = strtolower(trim($sumber));
+        return match ($s) {
+            'e-katalog' => ['label' => 'E-Katalog', 'badge' => 'badge--hijau', 'diproses' => true],
+            'tender' => ['label' => 'Tender', 'badge' => 'badge--biru', 'diproses' => true],
+            'non-tender', 'nontender' => ['label' => 'Non Tender', 'badge' => 'badge--biru', 'diproses' => true],
+            'pencatatan-non-tender', 'pencatatan-nontender' => ['label' => 'Pencatatan Nontender', 'badge' => 'badge--amber', 'diproses' => true],
+            'pencatatan-swakelola' => ['label' => 'Pencatatan Swakelola', 'badge' => 'badge--amber', 'diproses' => true],
+            'e-kontrak' => ['label' => 'E-Kontrak', 'badge' => 'badge--brand', 'diproses' => true],
+            default => ['label' => ucwords(str_replace(['-', '_'], ' ', $s)), 'badge' => 'badge--hijau', 'diproses' => true],
+        };
+    }
+
+    /**
      * Daftar Paket Penyedia (Penyedia murni & Penyedia Dalam Swakelola / PDS).
      *
      * @return array{items: array, total: int}
@@ -427,20 +454,40 @@ class RupRepository
             $query->where('p.jenis_pengadaan', $filters['jenis_pengadaan']);
         }
 
-        // Filter Status Proses
+        // Filter Status / Jenis Proses
         if (! empty($filters['status_proses'])) {
-            if ($filters['status_proses'] === 'diproses') {
+            $sp = strtolower(trim((string) $filters['status_proses']));
+            if ($sp === 'belum') {
+                $query->whereNotIn(DB::raw('p.kd_rup::text'), function ($sub) {
+                    $sub->select('kd_rup')->from('public.ref_rup_proses');
+                });
+            } elseif ($sp === 'diproses') {
                 $query->whereIn(DB::raw('p.kd_rup::text'), function ($sub) {
                     $sub->select('kd_rup')->from('public.ref_rup_proses');
                 });
             } else {
-                $query->whereNotIn(DB::raw('p.kd_rup::text'), function ($sub) {
-                    $sub->select('kd_rup')->from('public.ref_rup_proses');
+                // Filter spesifik nama proses (misal: 'e-katalog', 'tender', dsb)
+                $query->whereIn(DB::raw('p.kd_rup::text'), function ($sub) use ($sp) {
+                    $sub->select('kd_rup')->from('public.ref_rup_proses')->where('sumber', $sp);
                 });
             }
         }
 
         $total = $query->count();
+
+        // Pengurutan dinamis
+        $sort = $filters['sort'] ?? 'kd_rup';
+        $arah = strtolower((string) ($filters['arah'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        match ($sort) {
+            'pagu' => $query->orderByRaw("COALESCE(NULLIF(p.pagu::text, '')::numeric, 0) {$arah}"),
+            'nama_paket' => $query->orderBy('p.nama_paket', $arah),
+            'nama_satker' => $query->orderBy('p.nama_satker', $arah),
+            'tipe_paket' => $query->orderBy('p.tipe_paket', $arah),
+            'jenis_pengadaan' => $query->orderBy('p.jenis_pengadaan', $arah),
+            'status_pdn' => $query->orderBy('p.status_pdn', $arah),
+            default => $query->orderBy('p.kd_rup', $arah),
+        };
 
         $rows = $query->select([
             'p.kd_rup',
@@ -456,7 +503,6 @@ class RupRepository
             'p.tgl_pengumuman_paket',
             'p.status_umumkan_rup',
         ])
-            ->orderByDesc('p.kd_rup')
             ->offset($offset)
             ->limit($perHalaman)
             ->get();
@@ -478,7 +524,8 @@ class RupRepository
         $items = [];
         foreach ($rows as $idx => $r) {
             $kd = (string) $r->kd_rup;
-            $diproses = isset($prosesMap[$kd]);
+            $sumberProses = $prosesMap[$kd] ?? null;
+            $infoProses = self::labelProses($sumberProses);
             $isPds = (strtoupper(trim((string) $r->tipe_paket)) === 'PDS' || str_contains(strtoupper((string) $r->tipe_paket), 'SWAKELOLA'));
 
             $items[] = [
@@ -492,8 +539,10 @@ class RupRepository
                 'jenis_pengadaan' => (string) ($r->jenis_pengadaan ?: '—'),
                 'metode_pengadaan' => (string) ($r->metode_pengadaan ?: '—'),
                 'status_pdn' => strtoupper(trim((string) $r->status_pdn)) === 'PDN' ? 'PDN' : 'Non-PDN',
-                'status_proses' => $diproses ? 'Diproses' : 'Belum Diproses',
-                'sumber_proses' => $diproses ? $prosesMap[$kd] : null,
+                'nama_proses' => $infoProses['label'],
+                'badge_proses' => $infoProses['badge'],
+                'is_diproses' => $infoProses['diproses'],
+                'sumber_raw' => $sumberProses,
                 'pagu' => (float) $r->pagu,
                 'tgl_pengumuman' => $r->tgl_pengumuman_paket,
             ];
@@ -544,6 +593,18 @@ class RupRepository
 
         $total = $query->count();
 
+        // Pengurutan dinamis
+        $sort = $filters['sort'] ?? 'kd_rup';
+        $arah = strtolower((string) ($filters['arah'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        match ($sort) {
+            'pagu' => $query->orderByRaw("COALESCE(NULLIF(s.pagu::text, '')::numeric, 0) {$arah}"),
+            'nama_paket' => $query->orderBy('s.nama_paket', $arah),
+            'nama_satker' => $query->orderBy('s.nama_satker', $arah),
+            'tipe_swakelola' => $query->orderBy('s.tipe_swakelola', $arah),
+            default => $query->orderBy('s.kd_rup', $arah),
+        };
+
         $rows = $query->select([
             's.kd_rup',
             's.nama_paket',
@@ -558,7 +619,6 @@ class RupRepository
             's.tgl_awal_pelaksanaan_kontrak',
             's.status_umumkan_rup',
         ])
-            ->orderByDesc('s.kd_rup')
             ->offset($offset)
             ->limit($perHalaman)
             ->get();

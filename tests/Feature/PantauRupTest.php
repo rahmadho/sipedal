@@ -67,4 +67,41 @@ class PantauRupTest extends TestCase
         $this->assertArrayHasKey('baris', $satker);
         $this->assertArrayHasKey('grand_total', $satker);
     }
+
+    public function test_label_proses_pemetaan(): void
+    {
+        $katalog = RupRepository::labelProses('e-katalog');
+        $this->assertSame('E-Katalog', $katalog['label']);
+        $this->assertTrue($katalog['diproses']);
+
+        $tender = RupRepository::labelProses('tender');
+        $this->assertSame('Tender', $tender['label']);
+        $this->assertTrue($tender['diproses']);
+
+        $belum = RupRepository::labelProses(null);
+        $this->assertSame('Belum Diproses', $belum['label']);
+        $this->assertFalse($belum['diproses']);
+    }
+
+    public function test_ajax_serverside_paket_rup_berfungsi(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson('/report/pantau/rup?status_proses=e-katalog&sort=pagu&arah=desc');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'tab',
+                'total',
+                'halaman',
+                'perHalaman',
+                'sort',
+                'arah',
+                'html_tabel',
+                'html_paginasi',
+            ]);
+
+        $this->assertStringContainsString('E-Katalog', (string) $response->json('html_tabel'));
+    }
 }
