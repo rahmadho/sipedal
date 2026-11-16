@@ -78,7 +78,7 @@ class ReportController extends Controller
         }
 
         $halaman = max(1, (int) $request->query('halaman', 1));
-        $perHalaman = 25;
+        $perHalaman = max(5, min(100, (int) $request->query('per_halaman', 25)));
         $offset = ($halaman - 1) * $perHalaman;
 
         $filters = [

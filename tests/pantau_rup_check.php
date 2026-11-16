@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require __DIR__ . '/vendor/autoload.php';
+    $app = require_once __DIR__ . '/bootstrap/app.php';
+} else {
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+}
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
@@ -67,5 +72,17 @@ assert(isset($json['html_paginasi']) && !empty($json['html_paginasi']), 'AJAX mi
 assert(str_contains($json['html_tabel'], 'E-Katalog'), 'AJAX table does not display E-Katalog label');
 assert($json['total'] === 1343, 'AJAX total filter e-katalog mismatch');
 echo '✓ AJAX DataTables serverside OK (E-Katalog: ' . $json['total'] . ' paket)' . PHP_EOL;
+
+// 7. Check per_halaman support
+$dtReq = \Illuminate\Http\Request::create('/report/pantau/rup?per_halaman=50', 'GET');
+$dtReq->headers->set('X-Requested-With', 'XMLHttpRequest');
+$dtReq->headers->set('Accept', 'application/json');
+$dtReq->setLaravelSession($session);
+$dtRes = $httpKernel->handle($dtReq);
+assert($dtRes->getStatusCode() === 200, 'per_halaman AJAX status not 200');
+$dtJson = json_decode($dtRes->getContent(), true);
+assert($dtJson['perHalaman'] === 50, 'perHalaman not 50');
+assert(str_contains($dtJson['html_paginasi'], 'Menampilkan'), 'html_paginasi missing info');
+echo '✓ Per-halaman settings OK (perHalaman = 50)' . PHP_EOL;
 
 echo '== ALL CHECKS PASSED ==' . PHP_EOL;

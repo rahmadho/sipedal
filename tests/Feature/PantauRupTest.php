@@ -104,4 +104,17 @@ class PantauRupTest extends TestCase
 
         $this->assertStringContainsString('E-Katalog', (string) $response->json('html_tabel'));
     }
+
+    public function test_ajax_serverside_mendukung_pengaturan_per_halaman(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson('/report/pantau/rup?per_halaman=50');
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'perHalaman' => 50,
+            ]);
+    }
 }
