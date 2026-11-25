@@ -6,13 +6,12 @@ services:
     image: sipedal-app:latest
     container_name: sipedal_app
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8000}:80"
     environment:
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY}
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: ${APP_URL:-http://localhost:8000}
+      WA_GATEWAY_URL: ${WA_GATEWAY_URL:-http://wa-gateway:8090}
       DB_CONNECTION: pgsql
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
@@ -25,6 +24,8 @@ services:
       - app_storage:/var/www/html/storage
     depends_on:
       - wa-gateway
+    expose:
+      - "80"
 
   wa-gateway:
     build:
@@ -35,8 +36,6 @@ services:
     image: sipedal-wa-gateway:latest
     container_name: sipedal_wa_gateway
     restart: unless-stopped
-    ports:
-      - "${WA_PORT:-8090}:8090"
     environment:
       PORT: 8090
       WA_PROVIDER: baileys
@@ -44,6 +43,8 @@ services:
       WA_BAILEYS_AUTH_DIR_DEFAULT: /data/wa-auth
     volumes:
       - wa_auth:/data/wa-auth
+    expose:
+      - "8090"
 
 volumes:
   app_storage:

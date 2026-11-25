@@ -19,7 +19,7 @@ class WhatsAppGateway
 
         return [
             'provider' => AppSetting::get('wa_provider', $kd, 'baileys'),
-            'endpoint_url' => AppSetting::get('wa_endpoint_url', $kd, 'http://127.0.0.1:8090'),
+            'endpoint_url' => AppSetting::get('wa_endpoint_url', $kd, config('services.wa_gateway.endpoint_url')),
             'api_key' => AppSetting::get('wa_api_key', $kd, ''),
             'device_id' => AppSetting::get('wa_device_id', $kd, 'sipedal-wa'),
             'target_nomor' => AppSetting::get('wa_target_nomor', $kd, ''),

@@ -14,6 +14,12 @@ return [
     |
     */
 
+    'wa_gateway' => [
+        'endpoint_url' => env('WA_GATEWAY_URL', 'http://wa-gateway:8090'),
+        'api_key' => env('WA_GATEWAY_API_KEY', ''),
+        'device_id' => env('WA_GATEWAY_DEVICE_ID', 'sipedal-wa'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
